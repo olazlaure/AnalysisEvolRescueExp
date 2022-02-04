@@ -173,7 +173,7 @@ data_evolution_Lambda$Phenotyping <- factor(data_evolution_Lambda$Phenotyping,
 # PLOT 
 ## Population size
 ```{r }
-PLOT_Pop_size<-ggplot(data, aes(x = factor(Generation_Eggs), 
+PLOT_Pop_size<-ggplot2::ggplot(data, aes(x = factor(Generation_Eggs), 
                                 y = Nb_adults, 
                                 group = Population,
                                 colour = Genetic_Diversity)) + 
@@ -182,7 +182,7 @@ PLOT_Pop_size<-ggplot(data, aes(x = factor(Generation_Eggs),
   ylab("Population size") +
   labs(color="Genetic diversity") +
   xlab("Generation") +
-  theme_LO_sobre
+  theme_LO
 PLOT_Pop_size
 # save_plot("PLOT_PopulationSize.pdf",   PLOT_Pop_size, base_height = 10/cm(1),
 #           base_width = 15/cm(1), dpi = 610)
