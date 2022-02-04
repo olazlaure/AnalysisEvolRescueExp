@@ -2,9 +2,6 @@
 .Rhistory
 .Rapp.history
 
-# MacBook file
-.DS_Store
-
 # Session Data files
 .RData
 
@@ -40,3 +37,5 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+.DS_Store
+.Rproj.user
