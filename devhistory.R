@@ -17,6 +17,12 @@ dir.create("data")
 dir.create("reports")
 dir.create("figures")
 
+## Create a R directory and a file for functions
+usethis::use_r("theme_LO")
+
+## Update DESCRIPTION file
+usethis::use_package("ggplot2")
+
 ## Update NAMESPACE file
 devtools::document()
 

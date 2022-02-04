@@ -26,12 +26,12 @@ The [:open_file_folder: **reports**](reports/) directory contains the `.Rmd` fil
 
 ### Markdown versions
 
- - [:clipboard: Analysis_main_text](reports/main_text.Rmd) : All the analyses that can be found in the main text.
+ - [:clipboard: Analysis_main_text](reports/mainanalysis.Rmd) : All the analyses that can be found in the main text.
 
  
 ### HTML versions
 
- - [:clipboard: Analysis_main_text](reports/main_text.html) : All the analyses that can be found in the main text.
+ - [:clipboard: Analysis_main_text](reports/mainanalysis.html) : All the analyses that can be found in the main text.
 
 The [:open_file_folder: **figures**](figures/) directory contains the figures generated during the analyses.
 
