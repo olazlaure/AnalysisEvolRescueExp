@@ -423,16 +423,46 @@ SUM_POP_He_ALL<- Rmisc::summarySE(data_evolution_Lambda,
 
 SUM_POP_He_ALL$HE <- ifelse(SUM_POP_He_ALL$Phenotyping=="Initial",SUM_POP_He_ALL$He_remain,SUM_POP_He_ALL$He_remain_end)
 
+SUM_POP_He_ALL <- SUM_POP_He_ALL[!is.na(SUM_POP_He_ALL$He_remain_end),]
+SUM_POP_He_ALL <- SUM_POP_He_ALL[SUM_POP_He_ALL$HE!="-Inf",]
+
+
+facet_names <- c('Initial'="Before rescue experiment",'Final'="After rescue experiment")
 
 PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
                          colour = Genetic_Diversity, 
-                         shape = Phenotyping)) + 
+                         shape = Phenotyping)) +
+  #facet_wrap(~ Phenotyping, ncol=1) +
   geom_point(size = 3, alpha = 0.8) +
   scale_shape_manual(values = c(1, 19)) + 
   ylab("Growth rate") +
   xlab("Remaining heterozygosity") +
   theme_LO
 PLOT_He_ALL
+
+
+PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
+                         colour = Genetic_Diversity, 
+                         shape = Phenotyping)) +
+  facet_wrap(~ Phenotyping, ncol=1) +
+  geom_point(size = 3, alpha = 0.8) +
+  scale_shape_manual(values = c(1, 19)) + 
+  ylab("Growth rate") +
+  xlab("Remaining heterozygosity") +
+  theme_LO
+PLOT_He_ALL
+
+
+PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
+                         colour = Genetic_Diversity)) +
+  facet_wrap(~ Phenotyping, ncol=1) +
+  geom_point(size = 3, alpha = 0.8) +
+  ylab("Growth rate") +
+  xlab("Remaining heterozygosity") +
+  theme_LO
+PLOT_He_ALL
+
+
 
 # PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",], aes(x = HE, y = Lambda,
 #                          colour = Genetic_Diversity,
