@@ -35,6 +35,7 @@ dim(data)
 summary(data)
 
 #Remove populations killed due to the pathogen
+data_status  <- data.frame(data$Population,data$Extinction_finalstatus)
 data_kill<-data[data$Extinction_finalstatus=="kill",]
 dim(data_kill)
 data<-data[data$Extinction_finalstatus!="kill",]
@@ -85,6 +86,10 @@ for(i in levels(data$Population)){
 temp_data_pop <- subset(data, Population==i)
 ifelse(sum(temp_data_pop$Generation_Parents)!=15,print("ERROR"),print(i))
 temp_he_remaining_gen <- 1 - (1/(2*temp_data_pop$Nb_parents))
+
+#To consider extinct add this row: 
+is.na(temp_he_remaining_gen) <- sapply (temp_he_remaining_gen, is.infinite)
+
 temp_he_remain_exp <- prod(temp_he_remaining_gen, na.rm = TRUE)
 data_he$He_remain_exp[data_he$Population==i] <- temp_he_remain_exp
 rm(temp_he_remain_exp,temp_he_remaining_gen,temp_data_pop)
@@ -93,6 +98,9 @@ rm(temp_he_remain_exp,temp_he_remaining_gen,temp_data_pop)
 # Remaining He at the end of the experiment
 data_he$He_remain_end <- data_he$He_remain * data_he$He_remain_exp
 
+# Remove kill population 
+data_he <- data_he[!is.na(data_he$He_remain_exp),]
+data_he <- droplevels(data_he)
 ```
 
 
@@ -135,6 +143,9 @@ data_phenotyping <- data_phenotyping[data_phenotyping$Week=="5-week",]
 data <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
 
 #Add heterozygosity
+
+#To add population extinct
+data_phenotyping_withextinct <- merge(x = data_phenotyping, y = data_he, by = "Population", all.y=TRUE)
 data_phenotyping <- merge(x = data_phenotyping, y = data_he, by = "Population", all.x=TRUE)
 
 ``` 
@@ -187,14 +198,22 @@ PLOT_Pop_size
 # cowplot::save_plot(file = here::here("figures","OldPlot_PopulationSize.pdf"),PLOT_Pop_size, base_height = 10/cm(1),
 #           base_width = 15/cm(1), dpi = 610)
 
-
-
 SUM_Popsize <- Rmisc::summarySE(data, 
                         measurevar = c("Nb_adults"),
                        groupvars = c("Generation_Eggs",
                                      "Genetic_Diversity"), 
                        na.rm=TRUE)
 SUM_Popsize
+
+# SUM_Popsize <- Rmisc::summarySE(data[data$Extinction_finalstatus=="no",],
+#                         measurevar = c("Nb_adults"),
+#                        groupvars = c("Generation_Eggs",
+#                                      "Genetic_Diversity"),
+#                        na.rm=TRUE)
+# SUM_Popsize
+
+
+
 PLOT_Pop_size_average <- PLOT_Pop_size + 
   geom_point(data = SUM_Popsize, aes(x = factor(Generation_Eggs), 
                                 y = Nb_adults, 
@@ -212,7 +231,7 @@ PLOT_Pop_size_average <- PLOT_Pop_size +
                                 colour = Genetic_Diversity), 
            linetype = "dashed", size = 1.5, position = position_dodge(0.4)) 
 PLOT_Pop_size_average
-# cowplot::save_plot(file = here::here("figures","OldPlot_PopulationSize_average.pdf"),   PLOT_Pop_size_average, base_height = 10/cm(1),           base_width = 15/cm(1), dpi = 610)
+# cowplot::save_plot(file = here::here("figures","PopulationSize_average.pdf"),   PLOT_Pop_size_average, base_height = 10/cm(1),           base_width = 15/cm(1), dpi = 610)
 
 ``` 
 
@@ -236,7 +255,7 @@ PLOT_Extinction<-ggplot2::ggplot(data, aes(x = factor(Generation_Eggs),
   theme_LO
 PLOT_Extinction
 # #
-# cowplot::save_plot(here::here("figures","OldPlot_Extinction.pdf"),   PLOT_Extinction, base_height = 6/cm(1),
+# cowplot::save_plot(here::here("figures","Extinction.pdf"),   PLOT_Extinction, base_height = 6/cm(1),
 #           base_width = 20/cm(1), dpi = 610)
 # 
 # #
@@ -362,10 +381,10 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
                     labels = c( "Adult", "Pupae","Larvae")) + 
   theme_LO
 PLOT_prop
-
-# cowplot::save_plot(here::here("figures","OldPlot_Life_stage_proportion.pdf"),   PLOT_prop,
-#           base_height = 8/cm(1), base_width = 16/cm(1), dpi = 610)
 # 
+# cowplot::save_plot(here::here("figures","Life_stage_proportion.pdf"),   PLOT_prop,
+#           base_height = 8/cm(1), base_width = 16/cm(1), dpi = 610)
+
 
 ``` 
 
@@ -463,6 +482,10 @@ PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda,
 PLOT_He_ALL
 
 
+cowplot::save_plot(here::here("figures","Fitness_He_initial_final.pdf"),   PLOT_He_ALL,
+          base_height = 20/cm(1), base_width = 16/cm(1), dpi = 610)
+
+
 
 # PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",], aes(x = HE, y = Lambda,
 #                          colour = Genetic_Diversity,
@@ -476,7 +499,57 @@ PLOT_He_ALL
 
 
 
+########################
+###Plot final phenotyping with extinct 
+########################
+data_phenotyping_withextinct
+SUM_POP_He_ALL_extinct<- Rmisc::summarySE(data_phenotyping_withextinct,
+                            measurevar = c("Lambda"),
+                       groupvars = c("Genetic_Diversity","He_remain", "He_remain_end",
+                                     "Population"), 
+                       na.rm=TRUE)
 
+
+#Add extinction variable
+SUM_POP_He_ALL_extinct$Extinction_finalstatus <-ifelse(is.na(SUM_POP_He_ALL_extinct$Lambda),
+                                        "yes","no") 
+
+
+#Replace extinct by NA
+SUM_POP_He_ALL_extinct$Lambda <- ifelse(is.na(SUM_POP_He_ALL_extinct$Lambda),
+                                        0,SUM_POP_He_ALL_extinct$Lambda)
+
+SUM_POP_He_ALL_extinct$Genetic_Diversity <- ifelse(is.na(SUM_POP_He_ALL_extinct$Genetic_Diversity),
+                                        SUM_POP_He_ALL_extinct$Population,
+                                        SUM_POP_He_ALL_extinct$Genetic_Diversity)
+
+SUM_POP_He_ALL_extinct$Genetic_Diversity[grep("Low",as.character(SUM_POP_He_ALL_extinct$Population))] <- "Low"
+SUM_POP_He_ALL_extinct$Genetic_Diversity[grep("Med",as.character(SUM_POP_He_ALL_extinct$Population))] <- "Medium"
+SUM_POP_He_ALL_extinct$Genetic_Diversity[grep("High",as.character(SUM_POP_He_ALL_extinct$Population))] <- "High"
+
+
+#Order levels 
+SUM_POP_He_ALL_extinct$Genetic_Diversity <- factor(SUM_POP_He_ALL_extinct$Genetic_Diversity, levels = c("High", "Medium", "Low"))
+
+
+PLOT_He_withextinct <- ggplot2::ggplot(SUM_POP_He_ALL_extinct, 
+                               aes(x = He_remain_end, y = Lambda, 
+                         colour = Genetic_Diversity, 
+                         shape = Extinction_finalstatus, 
+                         size = N)) +
+  geom_point(alpha = 0.7) +
+  ylab("Growth rate") +
+  xlab("Remaining heterozygosity") +
+  scale_shape_manual(values = c(19, 1)) + 
+  theme_LO + 
+  labs(color="Genetic diversity") +
+  labs(shape="Extinct population") +
+  labs(size="Replicates") 
+
+PLOT_He_withextinct
+
+# cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_withextinct,
+#           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
 
 ``` 
 
