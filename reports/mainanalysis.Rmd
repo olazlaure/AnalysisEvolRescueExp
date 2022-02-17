@@ -1005,110 +1005,6 @@ emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ``` 
 
 
-## Evolution of fitness over time
-```{r }
-############ 
-###### Distribution
-############
-hist(data_evolution_Lambda$Lambda, breaks=50)
-
-
-# Square root
-msqrt <- lme4::lmer(sqrt(Lambda) ~ Genetic_Diversity*Phenotyping  + 
-                Block + (1|Population), 
-              data = data_evolution_Lambda)
-summary(msqrt)
-
-# log
-mlog <- lme4::lmer(log(Lambda+1) ~ Genetic_Diversity*Phenotyping  +
-               Block + (1|Population),
-              data=data_evolution_Lambda)
-
-# Normal
-mnorm <- lme4::lmer(Lambda ~ Genetic_Diversity*Phenotyping  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-
-## Compare AIC
-AIC(mlog, msqrt,mnorm)
-#Square root a better fits to the data 
-#But we compare different values: Growth rate and Growth rate+1
-
-#Distribution Residuals
-hist(residuals(mlog),col="yellow",freq=F)
-hist(residuals(msqrt),col="yellow",freq=F)  #Seems the better fit
-hist(residuals(mnorm),col="yellow",freq=F)
-
-#Test normality
-g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mlog), "norm"))
-g1$kstest 
-g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(msqrt), "norm"))
-g1$kstest 
-g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mnorm), "norm"))
-g1$kstest
-
-# QQ plot
-# plot(mlog, which = 2) 
-# plot(msqrt, which = 2) #Seems the better fit!
-# plot(mnorm, which = 2) #Seems the better fit but very high AIC 
-qqnorm(resid(mlog))
-qqline(resid(mlog))
-
-qqnorm(resid(msqrt))
-qqline(resid(msqrt))
-
-qqnorm(resid(mnorm))
-qqline(resid(mnorm)) #best fit
-
-############ 
-###### Model selection
-############
-
-m0 <- lme4::lmer(Lambda ~ Genetic_Diversity*Phenotyping  + 
-                Block + (1|Population) ,
-              data=data_evolution_Lambda)
-
-
-m1 <- lme4::lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-                Block + (1|Population) ,
-              data=data_evolution_Lambda)
-
-anova(m0,m1,test="Chisq") #Remove interaction
-
-
-#Same result with: 
-# m1 <- lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-#                 (1|Block) + (1|Population) + (1|ID_Rep:Population),
-#               data=data_evolution_Lambda)
-# OR
-# m1 <- lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-#                (1|Block) + (1|Population) ,
-#               data=data_evolution_Lambda)
-
-m2 <- lme4::lmer(Lambda ~ Phenotyping  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-m3 <- lme4::lmer(Lambda ~ Genetic_Diversity  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-
-anova(m1,m2,test="Chisq") #Keep phenotyping
-anova(m1,m3,test="Chisq") #Keep genetic diversity
-
-############ 
-###### Posthoc
-############ 
-mod_final <- lme4::lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-
-emmeans::emmeans(mod_final, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-emmeans::emmeans(mod_final, list(pairwise ~ Phenotyping), adjust = "tukey") #
-
-#
-``` 
-
-
 
 ## Growth rate G6
 ```{r }
@@ -1317,7 +1213,7 @@ mod3 <- lme4::lmer(Lambda ~ log(He_remain_end) + Block + (1|Population),
 mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
                    data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
 anova(mod3,mod4,test="Chisq") # difference
-
+summary(mod3)
 
 #############################################################
 ##################        Predict         ###################
@@ -1428,4 +1324,111 @@ emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 
 ``` 
+
+
+
+
+## Evolution of growthrate over time
+```{r }
+############ 
+###### Distribution
+############
+hist(data_evolution_Lambda$Lambda, breaks=50)
+
+
+# Square root
+msqrt <- lme4::lmer(sqrt(Lambda) ~ Genetic_Diversity*Phenotyping  + 
+                Block + (1|Population), 
+              data = data_evolution_Lambda)
+summary(msqrt)
+
+# log
+mlog <- lme4::lmer(log(Lambda+1) ~ Genetic_Diversity*Phenotyping  +
+               Block + (1|Population),
+              data=data_evolution_Lambda)
+
+# Normal
+mnorm <- lme4::lmer(Lambda ~ Genetic_Diversity*Phenotyping  + 
+                Block + (1|Population),
+              data=data_evolution_Lambda)
+
+## Compare AIC
+AIC(mlog, msqrt,mnorm)
+#Square root a better fits to the data 
+#But we compare different values: Growth rate and Growth rate+1
+
+#Distribution Residuals
+hist(residuals(mlog),col="yellow",freq=F)
+hist(residuals(msqrt),col="yellow",freq=F)  #Seems the better fit
+hist(residuals(mnorm),col="yellow",freq=F)
+
+#Test normality
+g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mlog), "norm"))
+g1$kstest 
+g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(msqrt), "norm"))
+g1$kstest 
+g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mnorm), "norm"))
+g1$kstest
+
+# QQ plot
+# plot(mlog, which = 2) 
+# plot(msqrt, which = 2) #Seems the better fit!
+# plot(mnorm, which = 2) #Seems the better fit but very high AIC 
+qqnorm(resid(mlog))
+qqline(resid(mlog))
+
+qqnorm(resid(msqrt))
+qqline(resid(msqrt))
+
+qqnorm(resid(mnorm))
+qqline(resid(mnorm)) #best fit
+
+############ 
+###### Model selection
+############
+
+m0 <- lme4::lmer(Lambda ~ Genetic_Diversity*Phenotyping  + 
+                Block + (1|Population) ,
+              data=data_evolution_Lambda)
+
+
+m1 <- lme4::lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
+                Block + (1|Population) ,
+              data=data_evolution_Lambda)
+
+anova(m0,m1,test="Chisq") #Remove interaction
+
+
+#Same result with: 
+# m1 <- lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
+#                 (1|Block) + (1|Population) + (1|ID_Rep:Population),
+#               data=data_evolution_Lambda)
+# OR
+# m1 <- lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
+#                (1|Block) + (1|Population) ,
+#               data=data_evolution_Lambda)
+
+m2 <- lme4::lmer(Lambda ~ Phenotyping  + 
+                Block + (1|Population),
+              data=data_evolution_Lambda)
+m3 <- lme4::lmer(Lambda ~ Genetic_Diversity  + 
+                Block + (1|Population),
+              data=data_evolution_Lambda)
+
+anova(m1,m2,test="Chisq") #Keep phenotyping
+anova(m1,m3,test="Chisq") #Keep genetic diversity
+
+############ 
+###### Posthoc
+############ 
+mod_final <- lme4::lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
+                Block + (1|Population),
+              data=data_evolution_Lambda)
+
+emmeans::emmeans(mod_final, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+emmeans::emmeans(mod_final, list(pairwise ~ Phenotyping), adjust = "tukey") #
+
+#
+``` 
+
 
