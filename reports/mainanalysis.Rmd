@@ -483,7 +483,7 @@ PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda,
 PLOT_He_ALL
 
 
-PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
+PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda,
                          colour = Genetic_Diversity)) +
   facet_wrap(~ Phenotyping, ncol=1) +
   geom_point(size = 3, alpha = 0.8) +
@@ -543,12 +543,12 @@ SUM_POP_He_ALL_extinct$Genetic_Diversity[grep("High",as.character(SUM_POP_He_ALL
 SUM_POP_He_ALL_extinct$Genetic_Diversity <- factor(SUM_POP_He_ALL_extinct$Genetic_Diversity, levels = c("High", "Medium", "Low"))
 
 
-PLOT_He_withextinct <- ggplot2::ggplot(SUM_POP_He_ALL_extinct, 
+PLOT_He_withextinct <- ggplot2::ggplot() +
+  geom_point(data = SUM_POP_He_ALL_extinct, 
                                aes(x = He_remain_end, y = Lambda, 
                          colour = Genetic_Diversity, 
                          shape = Extinction_finalstatus, 
-                         size = N)) +
-  geom_point(alpha = 0.7) +
+                         size = N), alpha = 0.7) +
   ylab("Growth rate") +
   xlab("Remaining heterozygosity") +
   scale_shape_manual(values = c(19, 1)) + 
@@ -1295,14 +1295,72 @@ mod2 <- lme4::lmer(Lambda ~ Block + (1|Population),
                    data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
 mod3 <- lme4::lmer(Lambda ~ log(He_remain_end) + Block + (1|Population), 
                    data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
-anova(mod1,mod2,test="Chisq") # difference
+mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+mod5 <- lme4::lmer(Lambda ~ exp(He_remain_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+MuMIn::model.sel(mod0, mod1,mod2,mod3,mod4,mod5)
+
+#Makes sense: best model log He
+x <- seq(1:100)
+y <- seq(1001:1100)
+plot(log(x),y)
+PLOT_He_withextinct
 
 
+#############################################################
+##################        Analysis        ###################
+#############################################################
 
-# x <- log(seq(1:100))
-# y <- seq(1001:1100)
-# plot(x,y)
+mod3 <- lme4::lmer(Lambda ~ log(He_remain_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+anova(mod3,mod4,test="Chisq") # difference
+
+
+#############################################################
+##################        Predict         ###################
+#############################################################
+
+data_predict_lambda <- data.frame(He_remain_end =
+  seq(min(data_phenotyping[!is.na(data_phenotyping$He_remain_end),]$He_remain_end),
+      max(data_phenotyping[!is.na(data_phenotyping$He_remain_end),]$He_remain_end), 
+      0.01),
+                                   Block = "Block4")
+
+data_predict_lambda$lambda_predict <- predict(mod3, 
+                                        type = "response",
+                                        re.form = NA,
+                                        newdata = data_predict_lambda)
+ 
+   
+
+PLOT_He_expect <- ggplot2::ggplot() +
+  geom_line(data = data_predict_lambda, 
+                                aes(x = He_remain_end, y = lambda_predict), 
+                                linetype = "longdash", col = "grey40", size = 1.25) +
+  geom_point(data = SUM_POP_He_ALL_extinct, 
+                               aes(x = He_remain_end, y = Lambda, 
+                         colour = Genetic_Diversity, 
+                         shape = Extinction_finalstatus, 
+                         size = N), alpha = 0.7) +
+  ylab("Growth rate") +
+  xlab("Remaining heterozygosity") +
+  scale_shape_manual(values = c(19, 1)) + 
+  theme_LO + 
+  labs(color="Genetic diversity") +
+  labs(shape="Extinct population") +
+  labs(size="Replicates") 
+
+PLOT_He_expect
+# 
+# cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_withextinct,
+#           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
+
+
 ```
+
 
 
 
