@@ -266,7 +266,7 @@ PLOT_Extinction
 
 
 
-## Growth rate
+## Growth rate G2
 ```{r }
 tapply(data_G2$Lambda,data_G2$Genetic_Diversity,mean)
 
@@ -395,7 +395,7 @@ PLOT_prop
 # All but with: He beginning for both and with pseudoreplication for final
 ggplot2::ggplot(data_evolution_Lambda, aes(x = He_remain, y = Lambda, 
                          colour = Genetic_Diversity)) + 
-  facet_wrap(~ Phenotyping, ncol = 1)+
+  facet_wrap(~ Phenotyping, ncol = 1, scales = "free")+
   geom_point(size = 2, alpha = 0.8) +
   ylab("Growth rate") +
   theme(legend.position = "none") +
@@ -412,6 +412,17 @@ PLOT_He_Initial <- ggplot2::ggplot(data_G2, aes(x = He_remain, y = Lambda,
   xlab("Remaining heterozygosity") +
   theme_LO
 PLOT_He_Initial
+
+
+PLOT_He_End <- ggplot2::ggplot(data_evolution_Lambda[data_evolution_Lambda$Phenotyping=="Final",],
+                               aes(x = He_remain_end, y = Lambda, 
+                         colour = Genetic_Diversity)) + 
+  geom_point(size = 2, alpha = 0.8) +
+  ylab("Growth rate") +
+  theme(legend.position = "none") +
+  xlab("Remaining heterozygosity") +
+  theme_LO
+PLOT_He_End
 
 
 # Remove pseudoreplication: average of each population
@@ -482,8 +493,8 @@ PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda,
 PLOT_He_ALL
 
 
-cowplot::save_plot(here::here("figures","Fitness_He_initial_final.pdf"),   PLOT_He_ALL,
-          base_height = 20/cm(1), base_width = 16/cm(1), dpi = 610)
+# cowplot::save_plot(here::here("figures","Fitness_He_initial_final.pdf"),   PLOT_He_ALL,
+#           base_height = 20/cm(1), base_width = 16/cm(1), dpi = 610)
 
 
 
@@ -570,7 +581,7 @@ data_proba_extinction$y <- ifelse(data_proba_extinction$Extinction_finalstatus =
 ###### Analysis
 ############ 
 #Analysis
-mod0 <- lme4::glmer(y ~ Genetic_Diversity + Block + (1|Population),  
+mod0 <- glm(y ~ Genetic_Diversity + Block,  
       data = data_proba_extinction, family = binomial)
 
 
@@ -578,13 +589,24 @@ summary(mod0)
 
 
 #Test genetic diversity effect
-mod1 <- lme4::glmer(y ~ Block + (1|Population),  
+mod1 <- glm(y ~ Block ,  
       data = data_proba_extinction, family = binomial)
-anova(mod0, mod1, test = "Chisq")
+anova(mod1, mod0, test = "Chisq")
 #We keep genetic diversity 
 
+# Perform the lrtest 
+(A <- logLik(mod1))
+(B <- logLik(mod0))
+#Since the logLik() function gives more information than the numeric value, use the as.numeric() function to isolate the numeric value
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+#df = 5 - 3 = 2
+(p.val <- pchisq(teststat, df = 2, lower.tail = FALSE))
 
-mod0 <- lme4::glmer(y ~ Genetic_Diversity-1 + Block + (1|Population),  
+lmtest::lrtest(mod1, mod0)
+
+
+
+mod0 <- glm(y ~ Genetic_Diversity-1 + Block ,  
       data = data_proba_extinction, family = binomial)
 summary(mod0)
 
@@ -594,17 +616,22 @@ summary(mod0)
 ###### Predicted value
 ############ 
 #Extract probability of extinction 
-(p_high <- plogis(-3.950e+01))
-(p_med <- plogis(-3.014e+00))
-(p_low <- plogis(-2.808e+00))
+(p_high <- plogis(-21.3144))
+(p_med <- plogis(-3.0142))
+(p_low <- plogis(-2.8082))
 
+data_predict_extinct <- data.frame(Genetic_Diversity = levels(data_proba_extinction$Genetic_Diversity),
+                                   Block = "Block4")
 
-
-predict(mod0, type = "response", 
+data_predict_extinct$predict <- predict(mod0, type = "response",
         re.form = NA,
-        newdata = data.frame(Genetic_Diversity = levels(data_proba_extinction$Genetic_Diversity), 
-                             Block = "Block4"))
+        newdata = data_predict_extinct)
         
+data_predict_extinct
+p_high
+p_med
+p_low
+
 
 ############ 
 ###### Posthoc
@@ -655,6 +682,166 @@ emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ## Population size over time
 ```{r }
 
+
+####################### 
+####################### MODEL INCLUDING GENETIC DIVERSITY WITHOUT GEN 1  
+####################### 
+###################### REMOVE GEN 1 ##########################33
+
+#If we dont consider Gen=1 
+PLOT_Pop_size_average
+fit <- lm(log(Nb_adults+1) ~ Generation_Eggs, data = data[data$Generation_Eggs>=2,])
+#second degree
+fit2 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,2,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+#third degree
+fit3 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,3,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+#fourth degree
+fit4 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,4,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+#fourth degree
+fit5 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,5,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+#exp
+fit6 <- lm(log(Nb_adults+1)~exp(Generation_Eggs), data = data[data$Generation_Eggs>=2,])
+#log
+fit7 <- lm(log(Nb_adults+1)~log(Generation_Eggs), data = data[data$Generation_Eggs>=2,])
+
+fit <- glm(Nb_adults ~ Generation_Eggs, 
+           data = data[data$Generation_Eggs>=2,], family = "poisson")
+fit2 <- glm(Nb_adults~stats::poly(Generation_Eggs,2,raw=TRUE), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+fit3 <- glm(Nb_adults~stats::poly(Generation_Eggs,3,raw=TRUE), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+fit4 <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+fit5 <- glm(Nb_adults~stats::poly(Generation_Eggs,5,raw=TRUE), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+fit6 <- glm(Nb_adults~exp(Generation_Eggs), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+fit7 <- glm(Nb_adults~log(Generation_Eggs), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+
+
+
+
+
+#generate range of 50 numbers starting from 30 and ending at 160
+# xx <- seq(1,6, length=100)
+# plot(data[data$Generation_Eggs>=2,]$Generation_Eggs,
+#      log(data[data$Generation_Eggs>=2,]$Nb_adults+1),pch=19,ylim=c(0,8))
+# lines(xx, predict(fit, data.frame(Generation_Eggs=xx)), col="red")
+# lines(xx, predict(fit2, data.frame(Generation_Eggs=xx)), col="green")
+# lines(xx, predict(fit3, data.frame(Generation_Eggs=xx)), col="blue")
+# lines(xx, predict(fit4, data.frame(Generation_Eggs=xx)), col="purple")
+# lines(xx, predict(fit5, data.frame(Generation_Eggs=xx)), col="yellow")
+# lines(xx, predict(fit6, data.frame(Generation_Eggs=xx)), col="orange")
+# lines(xx, predict(fit7, data.frame(Generation_Eggs=xx)), col="pink")
+xx <- seq(1,6, length=100)
+plot(data[data$Generation_Eggs>=2,]$Generation_Eggs,
+     data[data$Generation_Eggs>=2,]$Nb_adults,pch=19)
+lines(xx, predict(fit, data.frame(Generation_Eggs=xx),type = "response"), col="red")
+lines(xx, predict(fit2, data.frame(Generation_Eggs=xx),type = "response"), col="green")
+lines(xx, predict(fit3, data.frame(Generation_Eggs=xx),type = "response"), col="blue")
+lines(xx, predict(fit4, data.frame(Generation_Eggs=xx),type = "response"), col="purple")
+lines(xx, predict(fit5, data.frame(Generation_Eggs=xx),type = "response"), col="yellow")
+lines(xx, predict(fit6, data.frame(Generation_Eggs=xx),type = "response"), col="orange")
+lines(xx, predict(fit7, data.frame(Generation_Eggs=xx),type = "response"), col="pink")
+
+
+# Check the r squared
+rsq::rsq(fit,adj=TRUE)
+rsq::rsq(fit2,adj=TRUE)
+rsq::rsq(fit3,adj=TRUE)
+rsq::rsq(fit4,adj=TRUE)
+rsq::rsq(fit5,adj=TRUE)
+rsq::rsq(fit6,adj=TRUE)
+rsq::rsq(fit7,adj=TRUE)
+
+# Best model is fit 2
+
+
+data$gen_square <- data$Generation_Eggs^2
+fit2 <- glm(Nb_adults~stats::poly(Generation_Eggs,2,raw=TRUE), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+fit2 <- glm(Nb_adults~Generation_Eggs + gen_square, 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+
+# fit2 <- lm(log(Nb_adults+1)~poly(Generation_Eggs,2,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+# fit2 <- lm(log(Nb_adults+1)~ Generation_Eggs + gen_square, data = data[data$Generation_Eggs>=2,])
+#Add the interaction with Genetic diversity
+fit2 <- glm(Nb_adults~ Generation_Eggs*Genetic_Diversity +
+             gen_square*Genetic_Diversity,
+           data = data, family = "poisson")
+
+
+summary(fit2)
+
+####### Add genetic diversity 
+
+#Test oversdispersion
+mod0 <- glm(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+              Block , 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+sqrt(deviance(mod0)/(nobs(mod0)-length(coef(mod0))))
+sigma(mod0)
+# ccl: overdispersion
+
+
+mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+                Block  + (1|obs), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+blmeco::dispersion_glmer(mod1)
+sigma(mod1)
+
+#Convergence issue 
+max(abs(with(mod1@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
+
+
+
+# Test effect
+mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+                Block  + (1|obs), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + Genetic_Diversity + 
+                Block  + (1|obs), 
+            data = data[data$Generation_Eggs>=2,], family = "poisson")
+anova(mod1, mod2, test ="Chisq")  
+
+
+
+#Predict data
+filldata <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity),100), 
+                       Generation_Eggs = rep(seq(2,6, length = 100),each=3),
+                       Block = "Block4",
+                       gen_square = (rep(seq(2,6, length = 100),each=3))^2,
+                       Estimates = NA)
+
+filldata$Estimates <- predict(mod1, newdata=filldata, type = "response", re.form=~0)
+
+
+#Plot
+PLOT_Pop_size <- ggplot2::ggplot(data = data[data$Generation_Eggs>=2,]) + 
+  geom_line(data = filldata, aes(x = Generation_Eggs, 
+                                y = Estimates, 
+                               colour = Genetic_Diversity), size = 1.3) +
+  geom_point(data = data, 
+                      aes(x = Generation_Eggs, 
+                                y = Nb_adults, 
+                                colour = Genetic_Diversity),
+             position = position_dodge(0.4), size = 1.4, alpha = 0.6) +
+  ylab("Population size") +
+  labs(color="Genetic diversity") +
+  xlab("Generation") +
+  theme_LO
+PLOT_Pop_size
+
+emmeans::emmeans(mod1, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+
+
+
+###################################################################
+###################################################################
+###################################################################
+####################  INCLUDING GEN 1 ###########################
 PLOT_Pop_size_average
 fit <- glm(Nb_adults ~ Generation_Eggs, data = data, family = "poisson")
 #second degree
@@ -692,63 +879,23 @@ summary(fit5)$adj.r.squared
 summary(fit6)$adj.r.squared 
 summary(fit7)$adj.r.squared 
 
+rsq::rsq(fit,adj=TRUE)
+rsq::rsq(fit2,adj=TRUE)
+rsq::rsq(fit3,adj=TRUE)
+rsq::rsq(fit4,adj=TRUE)
+rsq::rsq(fit5,adj=TRUE)
+rsq::rsq(fit6,adj=TRUE)
+rsq::rsq(fit7,adj=TRUE)
+
+
 
 #
 fit4 <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE), data = data, family = "poisson")
 
 
 
-#If we dont consider Gen=1 
-PLOT_Pop_size_average
-fit <- lm(log(Nb_adults+1) ~ Generation_Eggs, data = data[data$Generation_Eggs>=2,])
-#second degree
-fit2 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,2,raw=TRUE), data = data[data$Generation_Eggs>=2,])
-#third degree
-fit3 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,3,raw=TRUE), data = data[data$Generation_Eggs>=2,])
-#fourth degree
-fit4 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,4,raw=TRUE), data = data[data$Generation_Eggs>=2,])
-#fourth degree
-fit5 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,5,raw=TRUE), data = data[data$Generation_Eggs>=2,])
-#exp
-fit6 <- lm(log(Nb_adults+1)~exp(Generation_Eggs), data = data[data$Generation_Eggs>=2,])
-#log
-fit7 <- lm(log(Nb_adults+1)~log(Generation_Eggs), data = data[data$Generation_Eggs>=2,])
-#generate range of 50 numbers starting from 30 and ending at 160
-xx <- seq(1,6, length=100)
-plot(data[data$Generation_Eggs>=2,]$Generation_Eggs,
-     log(data[data$Generation_Eggs>=2,]$Nb_adults+1),pch=19,ylim=c(0,8))
-lines(xx, predict(fit, data.frame(Generation_Eggs=xx)), col="red")
-lines(xx, predict(fit2, data.frame(Generation_Eggs=xx)), col="green")
-lines(xx, predict(fit3, data.frame(Generation_Eggs=xx)), col="blue")
-lines(xx, predict(fit4, data.frame(Generation_Eggs=xx)), col="purple")
-lines(xx, predict(fit5, data.frame(Generation_Eggs=xx)), col="yellow")
-lines(xx, predict(fit6, data.frame(Generation_Eggs=xx)), col="orange")
-lines(xx, predict(fit7, data.frame(Generation_Eggs=xx)), col="pink")
-# Check the r squared
-summary(fit)$adj.r.squared
-summary(fit2)$adj.r.squared
-summary(fit3)$adj.r.squared
-summary(fit4)$adj.r.squared # best r square
-summary(fit5)$adj.r.squared 
-summary(fit6)$adj.r.squared 
-summary(fit7)$adj.r.squared 
-
-
-
-# data$gen_square <- data$Generation_Eggs^2
-# fit2 <- lm(log(Nb_adults+1)~poly(Generation_Eggs,2,raw=TRUE), data = data[data$Generation_Eggs>=2,])
-# fit2 <- lm(log(Nb_adults+1)~ Generation_Eggs + gen_square, data = data[data$Generation_Eggs>=2,])
-# #Add the interaction with Genetic diversity 
-# fit2 <- glm(Nb_adults~ Generation_Eggs*Genetic_Diversity + 
-#              gen_square*Genetic_Diversity, 
-#            data = data, family = "poisson")
-# 
-# 
-# summary(fit2)
-
-
 ####################### 
-####################### MODEL INCLUDING GENETIC DIVERSITY 
+####################### MODEL INCLUDING GENETIC DIVERSITY and GEN 1 
 ####################### 
 
 #Test oversdispersion
@@ -808,6 +955,9 @@ summary(mod1)
 
 
 emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+
+
 
 
 ####################### 
@@ -960,69 +1110,120 @@ emmeans::emmeans(mod_final, list(pairwise ~ Phenotyping), adjust = "tukey") #
 
 
 
-## Fitness G6 
+## Growth rate G6
 ```{r }
-m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Population) + (1|ID_Rep:Population),
-                family = "poisson", data = data_phenotyping)
-summary(m0)
+head(data_phenotyping)
+#Without considering extinct populations 
 
-# Equivalent to:
-# m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Population/ID_Rep),
-#                 family = "poisson", data = data_5week)
+#tapply(data_phenotyping$Lambda,data_phenotyping$Population,length)
 
 
-#dispersion_lme4::glmer(m0) #dispersion ok 
-#Note: (1|School) + (1|Class:School) is equivalent to (1|School/Class)
-
-m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Population) + (1|ID_Rep:Population),
-                family = "poisson", data = data_phenotyping)
-m1 <- lme4::glmer(Adults ~ 1  + (1|Population) + (1|ID_Rep:Population),
-                family = "poisson", data = data_phenotyping)
-anova(m0,m1,test="Chisq") # difference
-
-summary(m0)
 
 
+#############################################################
+################## Determine distribution ###################
+#############################################################
+
+## Poisson lognormal model
+mlog <- lme4::lmer(log(Lambda+1) ~ Genetic_Diversity + Block + (1|Population), 
+                   data=data_phenotyping)
+#summary(mlog)
+
+# Square root
+msqrt <- lme4::lmer(sqrt(Lambda) ~ Genetic_Diversity + Block + (1|Population), 
+                   data=data_phenotyping)
+#summary(msqrt)
+
+# Normal
+mnorm <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
+                   data=data_phenotyping)
+
+
+## Compare AIC
+AIC(mlog, msqrt,mnorm)
+#Square root a better fits to the data 
+#But we compare different values: Growth rate and Growth rate+1
+
+# ## Simulate data 
+x.teo.log <- unlist(simulate(mlog))
+x.teo.sqrt <- unlist(simulate(msqrt))
+x.teo.norm <- unlist(simulate(mnorm))
+
+# ## QQplot to compared Negative binomial and Poisson log normal distributions
+qqplot(data_phenotyping$Lambda, x.teo.log,
+       main="QQ-plot", xlab="Observed data", ylab="Simulated data",
+       las=1, xlim = c(0, 10), ylim = c(0, 10), col='blue') ## QQ-plot
+points(sort(data_phenotyping$Lambda), sort(x.teo.sqrt), pch=1, col='red')
+points(sort(data_phenotyping$Lambda), sort(x.teo.norm), pch=1, col='green')
+abline(0,1)
+# ## Add legend
+legend(0, 7, legend=c("Log", "Sqrt", "Normal"),
+       col=c("blue", "red", "green"), 
+       pch=1, bty="n")
+# ## Normal distribution provides a good fit to the data
+
+
+# QQ plot
+# qqnorm(resid(mlog))
+# qqline(resid(mlog))
+# qqnorm(resid(msqrt))
+# qqline(resid(msqrt))
+# qqnorm(resid(mnorm))
+# qqline(resid(mnorm)) #best fit
+
+#Distribution Residuals
+hist(residuals(mlog),col="yellow",freq=F)
+hist(residuals(msqrt),col="yellow",freq=F)  #Seems the better fit
+hist(residuals(mnorm),col="yellow",freq=F) #Seems the better fit
+
+#Test normality
+g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mnorm), "norm"))
+g1$kstest 
+g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(msqrt), "norm"))
+g1$kstest 
+g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mnorm), "norm"))
+g1$kstest
+
+
+
+## Compare AIC
+AIC(mlog, msqrt, mnorm)
+#SLog a better fits to the data 
+
+
+
+
+
+#############################################################
+##################        Analysis        ###################
+#############################################################
+
+mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
+                   data=data_phenotyping)
+summary(mod0)
+
+mod1 <- lme4::lmer(Lambda ~ Block + (1|Population), 
+                   data=data_phenotyping)
+anova(mod0,mod1,test="Chisq") # difference
 
 
 ############ 
 ###### Posthoc
 ############ 
-emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-
-#test double nested
-m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Genetic_Diversity/Population/ID_Rep),
-                family = "poisson", data = data_phenotyping)
-m1 <- lme4::glmer(Adults ~ 1  + (1|Genetic_Diversity/Population/ID_Rep),
-                family = "poisson", data = data_phenotyping)
-anova(m0,m1,test="Chisq") 
-
-m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Genetic_Diversity/ID_Rep),
-                family = "poisson", data = data_phenotyping)
-m1 <- lme4::glmer(Adults ~ 1  + (1|Genetic_Diversity/ID_Rep),
-                family = "poisson", data = data_phenotyping)
-anova(m0,m1,test="Chisq") 
-
-``` 
-
-
-
-## Fitness G2 
-```{r }
-m0 <- glm(Nb_adults ~ Genetic_Diversity + Block,  family = "poisson", data = data_G2)
-summary(m0)
-
-m1<- glm(Nb_adults ~ Block,  family = "poisson", data = data_G2)
-anova(m0,m1,test="Chisq") # difference
+emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
 
 ############ 
-###### Posthoc
-############ 
-emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+###### Predict
+############
+data_predict_extinct <- data.frame(Genetic_Diversity = levels(data_phenotyping$Genetic_Diversity),
+                                   Block = "Block4")
 
+data_predict_extinct$predict <- predict(mod0, 
+                                        type = "response",
+                                        re.form = NA,
+                                        newdata = data_predict_extinct)
 
-``` 
+```
 
 
 ## Remaining He difference
@@ -1082,34 +1283,91 @@ emmeans::emmeans(mfull, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 ## Growth rate and He
 ```{r }
-# 
-# #fit first degree polynomial equation:
-# fit  <- lm(Lambda ~ HE, data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# #same fit as: fit5 <- lm(Lambda~HE+HE^2, data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# #same fit as: fit6 <- lm(Lambda~HE^2, data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# 
-# #second degree
-# fit2 <- lm(Lambda~poly(HE,2,raw=TRUE), data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# #third degree
-# fit3 <- lm(Lambda~poly(HE,3,raw=TRUE), data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# #fourth degree
-# fit4 <- lm(Lambda~poly(HE,4,raw=TRUE), data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# #Other fit 
-# fit7 <- lm(Lambda~exp(HE), data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# fit8 <- lm(Lambda~log(HE), data = SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",])
-# 
-# #generate range of 50 numbers starting from 30 and ending at 160
-# xx <- seq(0.3,1, length=100)
-# plot(SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",]$HE,
-#      SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",]$Lambda,pch=19,ylim=c(0,5))
-# lines(xx, predict(fit, data.frame(HE=xx)), col="red")
-# lines(xx, predict(fit2, data.frame(HE=xx)), col="green")
-# lines(xx, predict(fit3, data.frame(HE=xx)), col="blue")
-# lines(xx, predict(fit4, data.frame(HE=xx)), col="purple")
-# # lines(xx, predict(fit5, data.frame(HE=xx)), col="black")
-# # lines(xx, predict(fit6, data.frame(HE=xx)), col="yellow")
-# lines(xx, predict(fit7, data.frame(HE=xx)), col="brown")
-# lines(xx, predict(fit8, data.frame(HE=xx)), col="orange")
-# 
+#Best model with genetic diversity
+mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
+                   data=data_phenotyping)
 
+mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+mod1 <- lme4::lmer(Lambda ~ He_remain_end + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+mod2 <- lme4::lmer(Lambda ~ Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+mod3 <- lme4::lmer(Lambda ~ log(He_remain_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+anova(mod1,mod2,test="Chisq") # difference
+
+
+
+# x <- log(seq(1:100))
+# y <- seq(1001:1100)
+# plot(x,y)
 ```
+
+
+
+
+## Adults G6 
+```{r }
+m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Population) + (1|ID_Rep:Population),
+                family = "poisson", data = data_phenotyping)
+summary(m0)
+
+# Equivalent to:
+# m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Population/ID_Rep),
+#                 family = "poisson", data = data_5week)
+
+
+#dispersion_lme4::glmer(m0) #dispersion ok 
+#Note: (1|School) + (1|Class:School) is equivalent to (1|School/Class)
+
+m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Population) + (1|ID_Rep:Population),
+                family = "poisson", data = data_phenotyping)
+m1 <- lme4::glmer(Adults ~ 1  + (1|Population) + (1|ID_Rep:Population),
+                family = "poisson", data = data_phenotyping)
+anova(m0,m1,test="Chisq") # difference
+
+summary(m0)
+
+
+
+
+############ 
+###### Posthoc
+############ 
+emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+
+#test double nested
+m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Genetic_Diversity/Population/ID_Rep),
+                family = "poisson", data = data_phenotyping)
+m1 <- lme4::glmer(Adults ~ 1  + (1|Genetic_Diversity/Population/ID_Rep),
+                family = "poisson", data = data_phenotyping)
+anova(m0,m1,test="Chisq") 
+
+m0 <- lme4::glmer(Adults ~ Genetic_Diversity  + (1|Genetic_Diversity/ID_Rep),
+                family = "poisson", data = data_phenotyping)
+m1 <- lme4::glmer(Adults ~ 1  + (1|Genetic_Diversity/ID_Rep),
+                family = "poisson", data = data_phenotyping)
+anova(m0,m1,test="Chisq") 
+
+``` 
+
+
+
+## Adults G2 
+```{r }
+m0 <- glm(Nb_adults ~ Genetic_Diversity + Block,  family = "poisson", data = data_G2)
+summary(m0)
+
+m1<- glm(Nb_adults ~ Block,  family = "poisson", data = data_G2)
+anova(m0,m1,test="Chisq") # difference
+
+############ 
+###### Posthoc
+############ 
+emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+
+``` 
+
