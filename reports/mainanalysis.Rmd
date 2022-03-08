@@ -144,9 +144,9 @@ data <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
 
 #Add heterozygosity
 
-#To add population extinct
-data_phenotyping_withextinct <- merge(x = data_phenotyping, y = data_he, by = "Population", all.y=TRUE)
-data_phenotyping <- merge(x = data_phenotyping, y = data_he, by = "Population", all.x=TRUE)
+# #To add population extinct
+# data_phenotyping_withextinct <- merge(x = data_phenotyping, y = data_he, by = "Population", all.y=TRUE)
+# data_phenotyping <- merge(x = data_phenotyping, y = data_he, by = "Population", all.x=TRUE)
 
 ``` 
 
@@ -195,8 +195,6 @@ PLOT_Pop_size<-ggplot2::ggplot(data, aes(x = factor(Generation_Eggs),
   xlab("Generation") +
   theme_LO
 PLOT_Pop_size
-# cowplot::save_plot(file = here::here("figures","OldPlot_PopulationSize.pdf"),PLOT_Pop_size, base_height = 10/cm(1),
-#           base_width = 15/cm(1), dpi = 610)
 
 SUM_Popsize <- Rmisc::summarySE(data, 
                         measurevar = c("Nb_adults"),
@@ -291,51 +289,51 @@ PLOT_Growth
 
 ## Growth rate evolution
 ```{r }
-
-SUM_MEAN_start_end <- Rmisc::summarySE(data_evolution_Lambda, measurevar = c("Lambda"),
-                       groupvars = c("Genetic_Diversity","Phenotyping"), 
-                       na.rm=TRUE)
-SUM_POP_start_end <- Rmisc::summarySE(data_evolution_Lambda, measurevar = c("Lambda"),
-                       groupvars = c("Genetic_Diversity","Phenotyping",
-                                     "Population"), 
-                       na.rm=TRUE)
-
-
-
-
-
-PLOT_Growth_startend<-ggplot(SUM_POP_start_end, aes(x = Phenotyping, 
-                                 y = Lambda, 
-                                 group = Population,
-                                 colour = Genetic_Diversity)) + 
-  geom_point(position = position_dodge(0.4), size = 0.8, alpha = 0.7) +
-  geom_line(position = position_dodge(0.4), size = 0.2, alpha = 0.6) +
-  ylab("Growth rate") +
-  xlab("Phenotyping") +
-  theme_LO
-PLOT_Growth_startend
-
-PLOT_Growth_startend_average <- PLOT_Growth_startend + 
-  geom_point(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
-                                y = Lambda, 
-                                group = Genetic_Diversity,
-                                colour = Genetic_Diversity), 
-             size = 5, position = position_dodge(0.4)) +
-  geom_errorbar(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
-                                ymin = Lambda-ci, ymax = Lambda+ci, 
-                                group = Genetic_Diversity,
-                                colour = Genetic_Diversity), 
-             size = 1, width=.2,  position = position_dodge(0.4)) +
-  geom_line(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
-                                y = Lambda, 
-                                group = Genetic_Diversity,
-                                colour = Genetic_Diversity), 
-           linetype = "dashed", size = 1.5, position = position_dodge(0.4)) 
-PLOT_Growth_startend_average
 # 
-# cowplot::save_plot(here::here("figures","OldPlot_Lambda_Evolution.pdf"),
-#           PLOT_Growth_startend_average, base_height = 10/cm(1),
-#           base_width = 15/cm(1), dpi = 610)
+# SUM_MEAN_start_end <- Rmisc::summarySE(data_evolution_Lambda, measurevar = c("Lambda"),
+#                        groupvars = c("Genetic_Diversity","Phenotyping"), 
+#                        na.rm=TRUE)
+# SUM_POP_start_end <- Rmisc::summarySE(data_evolution_Lambda, measurevar = c("Lambda"),
+#                        groupvars = c("Genetic_Diversity","Phenotyping",
+#                                      "Population"), 
+#                        na.rm=TRUE)
+# 
+# 
+# 
+# 
+# 
+# PLOT_Growth_startend<-ggplot(SUM_POP_start_end, aes(x = Phenotyping, 
+#                                  y = Lambda, 
+#                                  group = Population,
+#                                  colour = Genetic_Diversity)) + 
+#   geom_point(position = position_dodge(0.4), size = 0.8, alpha = 0.7) +
+#   geom_line(position = position_dodge(0.4), size = 0.2, alpha = 0.6) +
+#   ylab("Growth rate") +
+#   xlab("Phenotyping") +
+#   theme_LO
+# PLOT_Growth_startend
+# 
+# PLOT_Growth_startend_average <- PLOT_Growth_startend + 
+#   geom_point(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
+#                                 y = Lambda, 
+#                                 group = Genetic_Diversity,
+#                                 colour = Genetic_Diversity), 
+#              size = 5, position = position_dodge(0.4)) +
+#   geom_errorbar(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
+#                                 ymin = Lambda-ci, ymax = Lambda+ci, 
+#                                 group = Genetic_Diversity,
+#                                 colour = Genetic_Diversity), 
+#              size = 1, width=.2,  position = position_dodge(0.4)) +
+#   geom_line(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
+#                                 y = Lambda, 
+#                                 group = Genetic_Diversity,
+#                                 colour = Genetic_Diversity), 
+#            linetype = "dashed", size = 1.5, position = position_dodge(0.4)) 
+# PLOT_Growth_startend_average
+# # 
+# # cowplot::save_plot(here::here("figures","OldPlot_Lambda_Evolution.pdf"),
+# #           PLOT_Growth_startend_average, base_height = 10/cm(1),
+# #           base_width = 15/cm(1), dpi = 610)
 ``` 
 
 
@@ -392,177 +390,124 @@ PLOT_prop
 ## Remaining heterozygosity
 ```{r }
 
-# All but with: He beginning for both and with pseudoreplication for final
-ggplot2::ggplot(data_evolution_Lambda, aes(x = He_remain, y = Lambda, 
-                         colour = Genetic_Diversity)) + 
-  facet_wrap(~ Phenotyping, ncol = 1, scales = "free")+
-  geom_point(size = 2, alpha = 0.8) +
-  ylab("Growth rate") +
-  theme(legend.position = "none") +
-  xlab("Remaining heterozygosity") +
-  theme_LO
-
-
-
-PLOT_He_Initial <- ggplot2::ggplot(data_G2, aes(x = He_remain, y = Lambda, 
-                         colour = Genetic_Diversity)) + 
-  geom_point(size = 2, alpha = 0.8) +
-  ylab("Growth rate") +
-  theme(legend.position = "none") +
-  xlab("Remaining heterozygosity") +
-  theme_LO
-PLOT_He_Initial
-
-
-PLOT_He_End <- ggplot2::ggplot(data_evolution_Lambda[data_evolution_Lambda$Phenotyping=="Final",],
-                               aes(x = He_remain_end, y = Lambda, 
-                         colour = Genetic_Diversity)) + 
-  geom_point(size = 2, alpha = 0.8) +
-  ylab("Growth rate") +
-  theme(legend.position = "none") +
-  xlab("Remaining heterozygosity") +
-  theme_LO
-PLOT_He_End
+# # All but with: He beginning for both and with pseudoreplication for final
+# ggplot2::ggplot(data_evolution_Lambda, aes(x = He_remain, y = Lambda, 
+#                          colour = Genetic_Diversity)) + 
+#   facet_wrap(~ Phenotyping, ncol = 1, scales = "free")+
+#   geom_point(size = 2, alpha = 0.8) +
+#   ylab("Growth rate") +
+#   theme(legend.position = "none") +
+#   xlab("Remaining heterozygosity") +
+#   theme_LO
+# 
+# 
+# 
+# PLOT_He_Initial <- ggplot2::ggplot(data_G2, aes(x = He_remain, y = Lambda, 
+#                          colour = Genetic_Diversity)) + 
+#   geom_point(size = 2, alpha = 0.8) +
+#   ylab("Growth rate") +
+#   theme(legend.position = "none") +
+#   xlab("Remaining heterozygosity") +
+#   theme_LO
+# PLOT_He_Initial
+# 
+# 
+# PLOT_He_End <- ggplot2::ggplot(data_evolution_Lambda[data_evolution_Lambda$Phenotyping=="Final",],
+#                                aes(x = He_remain_end, y = Lambda, 
+#                          colour = Genetic_Diversity)) + 
+#   geom_point(size = 2, alpha = 0.8) +
+#   ylab("Growth rate") +
+#   theme(legend.position = "none") +
+#   xlab("Remaining heterozygosity") +
+#   theme_LO
+# PLOT_He_End
 
 
 # Remove pseudoreplication: average of each population
 SUM_POP_He_Mean<- Rmisc::summarySE(data_evolution_Lambda[data_evolution_Lambda$Phenotyping=="Final",],
                             measurevar = c("Lambda"),
-                       groupvars = c("Genetic_Diversity","He_remain_end",
-                                     "Population"), 
-                       na.rm=TRUE)
+                            groupvars = c("Genetic_Diversity",
+                                          "He_remain_end",
+                                          "Population"), 
+                            na.rm=TRUE)
 
-PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_remain_end, y = Lambda, 
-                         colour = Genetic_Diversity)) + 
-  geom_point(size = 2, alpha = 0.8) +
+PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_remain_end,
+                                                      y = Lambda, 
+                                                      colour = Genetic_Diversity, 
+                                                      size = N)) + 
+  geom_point(alpha = 0.8) +
   ylab("Growth rate") +
-  theme(legend.position = "none") +
   xlab("Remaining heterozygosity") +
-  theme_LO
+  theme_LO + 
+  labs(color="Genetic diversity") +
+  labs(shape="Extinct population") +
+  labs(size="Replicates") 
 PLOT_He_Final
 
+   
 
-
-
-# ALL WITHOUT PSEUDO
-SUM_POP_He_ALL<- Rmisc::summarySE(data_evolution_Lambda,
-                            measurevar = c("Lambda"),
-                       groupvars = c("Genetic_Diversity","Phenotyping", "He_remain", "He_remain_end",
-                                     "Population"), 
-                       na.rm=TRUE)
-
-SUM_POP_He_ALL$HE <- ifelse(SUM_POP_He_ALL$Phenotyping=="Initial",SUM_POP_He_ALL$He_remain,SUM_POP_He_ALL$He_remain_end)
-
-SUM_POP_He_ALL <- SUM_POP_He_ALL[!is.na(SUM_POP_He_ALL$He_remain_end),]
-SUM_POP_He_ALL <- SUM_POP_He_ALL[SUM_POP_He_ALL$HE!="-Inf",]
-
-
-facet_names <- c('Initial'="Before rescue experiment",'Final'="After rescue experiment")
-
-PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
-                         colour = Genetic_Diversity, 
-                         shape = Phenotyping)) +
-  #facet_wrap(~ Phenotyping, ncol=1) +
-  geom_point(size = 3, alpha = 0.8) +
-  scale_shape_manual(values = c(1, 19)) + 
-  ylab("Growth rate") +
-  xlab("Remaining heterozygosity") +
-  theme_LO
-PLOT_He_ALL
-
-
-PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
-                         colour = Genetic_Diversity, 
-                         shape = Phenotyping)) +
-  facet_wrap(~ Phenotyping, ncol=1) +
-  geom_point(size = 3, alpha = 0.8) +
-  scale_shape_manual(values = c(1, 19)) + 
-  ylab("Growth rate") +
-  xlab("Remaining heterozygosity") +
-  theme_LO
-PLOT_He_ALL
-
-
-PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda,
-                         colour = Genetic_Diversity)) +
-  facet_wrap(~ Phenotyping, ncol=1) +
-  geom_point(size = 3, alpha = 0.8) +
-  ylab("Growth rate") +
-  xlab("Remaining heterozygosity") +
-  theme_LO
-PLOT_He_ALL
-
-
-# cowplot::save_plot(here::here("figures","Fitness_He_initial_final.pdf"),   PLOT_He_ALL,
-#           base_height = 20/cm(1), base_width = 16/cm(1), dpi = 610)
-
-
-
-# PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL[SUM_POP_He_ALL$Phenotyping=="Final",], aes(x = HE, y = Lambda,
-#                          colour = Genetic_Diversity,
+# # ALL WITHOUT PSEUDO
+# SUM_POP_He_ALL<- Rmisc::summarySE(data_evolution_Lambda,
+#                             measurevar = c("Lambda"),
+#                        groupvars = c("Genetic_Diversity","Phenotyping", "He_remain", "He_remain_end",
+#                                      "Population"), 
+#                        na.rm=TRUE)
+# 
+# SUM_POP_He_ALL$HE <- ifelse(SUM_POP_He_ALL$Phenotyping=="Initial",SUM_POP_He_ALL$He_remain,SUM_POP_He_ALL$He_remain_end)
+# 
+# SUM_POP_He_ALL <- SUM_POP_He_ALL[!is.na(SUM_POP_He_ALL$He_remain_end),]
+# SUM_POP_He_ALL <- SUM_POP_He_ALL[SUM_POP_He_ALL$HE!="-Inf",]
+# 
+# 
+# facet_names <- c('Initial'="Before rescue experiment",'Final'="After rescue experiment")
+# 
+# PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
+#                          colour = Genetic_Diversity, 
 #                          shape = Phenotyping)) +
+#   #facet_wrap(~ Phenotyping, ncol=1) +
 #   geom_point(size = 3, alpha = 0.8) +
-#   scale_shape_manual(values = c(19)) +
+#   scale_shape_manual(values = c(1, 19)) + 
+#   ylab("Growth rate") +
+#   xlab("Remaining heterozygosity") +
+#   theme_LO 
+# PLOT_He_ALL
+# 
+# 
+# PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda, 
+#                          colour = Genetic_Diversity, 
+#                          shape = Phenotyping)) +
+#   facet_wrap(~ Phenotyping, ncol=1) +
+#   geom_point(size = 3, alpha = 0.8) +
+#   scale_shape_manual(values = c(1, 19)) + 
+#   ylab("Growth rate") +
+#   xlab("Remaining heterozygosity") +
+#   theme_LO
+# PLOT_He_ALL
+# 
+# 
+# PLOT_He_ALL <- ggplot2::ggplot(SUM_POP_He_ALL, aes(x = HE, y = Lambda,
+#                          colour = Genetic_Diversity)) +
+#   facet_wrap(~ Phenotyping, ncol=1) +
+#   geom_point(size = 3, alpha = 0.8) +
 #   ylab("Growth rate") +
 #   xlab("Remaining heterozygosity") +
 #   theme_LO
 # PLOT_He_ALL
 
 
+``` 
 
-########################
-###Plot final phenotyping with extinct 
-########################
-data_phenotyping_withextinct
-SUM_POP_He_ALL_extinct<- Rmisc::summarySE(data_phenotyping_withextinct,
-                            measurevar = c("Lambda"),
-                       groupvars = c("Genetic_Diversity","He_remain", "He_remain_end",
-                                     "Population"), 
-                       na.rm=TRUE)
+## He over time 
+```{r }
 
 
-#Add extinction variable
-SUM_POP_He_ALL_extinct$Extinction_finalstatus <-ifelse(is.na(SUM_POP_He_ALL_extinct$Lambda),
-                                        "yes","no") 
 
 
-#Replace extinct by NA
-SUM_POP_He_ALL_extinct$Lambda <- ifelse(is.na(SUM_POP_He_ALL_extinct$Lambda),
-                                        0,SUM_POP_He_ALL_extinct$Lambda)
 
-SUM_POP_He_ALL_extinct$Genetic_Diversity <- ifelse(is.na(SUM_POP_He_ALL_extinct$Genetic_Diversity),
-                                        SUM_POP_He_ALL_extinct$Population,
-                                        SUM_POP_He_ALL_extinct$Genetic_Diversity)
-
-SUM_POP_He_ALL_extinct$Genetic_Diversity[grep("Low",as.character(SUM_POP_He_ALL_extinct$Population))] <- "Low"
-SUM_POP_He_ALL_extinct$Genetic_Diversity[grep("Med",as.character(SUM_POP_He_ALL_extinct$Population))] <- "Medium"
-SUM_POP_He_ALL_extinct$Genetic_Diversity[grep("High",as.character(SUM_POP_He_ALL_extinct$Population))] <- "High"
-
-
-#Order levels 
-SUM_POP_He_ALL_extinct$Genetic_Diversity <- factor(SUM_POP_He_ALL_extinct$Genetic_Diversity, levels = c("High", "Medium", "Low"))
-
-
-PLOT_He_withextinct <- ggplot2::ggplot() +
-  geom_point(data = SUM_POP_He_ALL_extinct, 
-                               aes(x = He_remain_end, y = Lambda, 
-                         colour = Genetic_Diversity, 
-                         shape = Extinction_finalstatus, 
-                         size = N), alpha = 0.7) +
-  ylab("Growth rate") +
-  xlab("Remaining heterozygosity") +
-  scale_shape_manual(values = c(19, 1)) + 
-  theme_LO + 
-  labs(color="Genetic diversity") +
-  labs(shape="Extinct population") +
-  labs(size="Replicates") 
-
-PLOT_He_withextinct
-
-# cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_withextinct,
-#           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
 
 ``` 
+
+
 
 # ANALYSIS 
 ## Probability of extinction
@@ -1323,112 +1268,6 @@ anova(m0,m1,test="Chisq") # difference
 emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
 
 
-``` 
-
-
-
-
-## Evolution of growthrate over time
-```{r }
-############ 
-###### Distribution
-############
-hist(data_evolution_Lambda$Lambda, breaks=50)
-
-
-# Square root
-msqrt <- lme4::lmer(sqrt(Lambda) ~ Genetic_Diversity*Phenotyping  + 
-                Block + (1|Population), 
-              data = data_evolution_Lambda)
-summary(msqrt)
-
-# log
-mlog <- lme4::lmer(log(Lambda+1) ~ Genetic_Diversity*Phenotyping  +
-               Block + (1|Population),
-              data=data_evolution_Lambda)
-
-# Normal
-mnorm <- lme4::lmer(Lambda ~ Genetic_Diversity*Phenotyping  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-
-## Compare AIC
-AIC(mlog, msqrt,mnorm)
-#Square root a better fits to the data 
-#But we compare different values: Growth rate and Growth rate+1
-
-#Distribution Residuals
-hist(residuals(mlog),col="yellow",freq=F)
-hist(residuals(msqrt),col="yellow",freq=F)  #Seems the better fit
-hist(residuals(mnorm),col="yellow",freq=F)
-
-#Test normality
-g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mlog), "norm"))
-g1$kstest 
-g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(msqrt), "norm"))
-g1$kstest 
-g1 <- fitdistrplus::gofstat(fitdistrplus::fitdist(residuals(mnorm), "norm"))
-g1$kstest
-
-# QQ plot
-# plot(mlog, which = 2) 
-# plot(msqrt, which = 2) #Seems the better fit!
-# plot(mnorm, which = 2) #Seems the better fit but very high AIC 
-qqnorm(resid(mlog))
-qqline(resid(mlog))
-
-qqnorm(resid(msqrt))
-qqline(resid(msqrt))
-
-qqnorm(resid(mnorm))
-qqline(resid(mnorm)) #best fit
-
-############ 
-###### Model selection
-############
-
-m0 <- lme4::lmer(Lambda ~ Genetic_Diversity*Phenotyping  + 
-                Block + (1|Population) ,
-              data=data_evolution_Lambda)
-
-
-m1 <- lme4::lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-                Block + (1|Population) ,
-              data=data_evolution_Lambda)
-
-anova(m0,m1,test="Chisq") #Remove interaction
-
-
-#Same result with: 
-# m1 <- lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-#                 (1|Block) + (1|Population) + (1|ID_Rep:Population),
-#               data=data_evolution_Lambda)
-# OR
-# m1 <- lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-#                (1|Block) + (1|Population) ,
-#               data=data_evolution_Lambda)
-
-m2 <- lme4::lmer(Lambda ~ Phenotyping  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-m3 <- lme4::lmer(Lambda ~ Genetic_Diversity  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-
-anova(m1,m2,test="Chisq") #Keep phenotyping
-anova(m1,m3,test="Chisq") #Keep genetic diversity
-
-############ 
-###### Posthoc
-############ 
-mod_final <- lme4::lmer(Lambda ~ Genetic_Diversity+Phenotyping  + 
-                Block + (1|Population),
-              data=data_evolution_Lambda)
-
-emmeans::emmeans(mod_final, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-emmeans::emmeans(mod_final, list(pairwise ~ Phenotyping), adjust = "tukey") #
-
-#
 ``` 
 
 
