@@ -64,46 +64,101 @@ data<-droplevels(data) #remove previous levels
 str(data)
 head(data)
 tail(data)
-
+dim(data)
 
 ``` 
 
 
-## Remaining heterozygosity
+
+## Heterozygosity remain over time 
 ```{r }
-#Upload growth rate end of experiment
+#Upload He dataset
 data_he <- read.table(file=here::here("data", "He_ReMaining_BeatricePop.csv"), sep=",", header=TRUE)
 data_he$Population <- as.factor(data_he$Population)
 data_he <- data_he[,c(1,3)]
 
+#Merge dataset: add heterozygosity data to oridinal data 
+data <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
 
-### Additional: He remaining 
-# New vector for the lost during exp
-data_he$He_remain_exp <- NA
+### Creation of 4 He: 
+  # 1- He_start: He was remaining for each population when we started the experiment 
+  # 2- He_lost_gen_t: He was lost only during this specfic generation during the experiment  (considering He=1 before this generation)
+  # 3- He_remain: He was remaining after each generation (He_remain[Gen=6]=He_end)
+  # 4- He_exp: He was lost during the entire experiment (considering He=1 at the beginning of the exp)
+  # 5- He_end: He was remaining for each population when we finished the experiment (considering the real He at the beginning of the exp, He_start, not 1)
 
-# He lost during exp
+
+##### 
+##### 1- He_start
+#####
+colnames(data)[27] <- "He_start"
+
+
+
+##### 
+##### 2- He_lost_gen_t
+##### 
+#Add He lost each generation
+data$He_lost_gen_t <- 1 - (1/(2*data$Nb_adults))
+#To consider extinct populations
+is.na(data$He_lost_gen_t) <- sapply (data$He_lost_gen_t, is.infinite)
+
+
+##### 
+##### 3- He_remain
+##### 
+#Create new variable He remain per generation
+data$He_remain <- NA
+#Initiate with gen=1: He_start * He_lost_gen1
+data$He_remain[data$Generation_Eggs=="1"] <- data$He_start[data$Generation_Eggs=="1"]*
+  data$He_lost_gen_t[data$Generation_Eggs=="1"]
+
+#Compute for all the other genrations, except the first one 
+for(i in levels(data$Population)){
+     ifelse(sum(data$Generation_Eggs[data$Population==i])!=21,print("ERROR"),print(i))
+ for(j in 2:max(data$Generation_Eggs)){
+   data$He_remain[data$Population==i&data$Generation_Eggs==j] <- 
+     data$He_remain[data$Population==i&data$Generation_Eggs==j-1]*
+     data$He_lost_gen_t[data$Population==i&data$Generation_Eggs==j]
+   }
+}
+
+
+
+
+##### 
+##### 4- He_exp
+##### 
+# He at the end of the experiment 
+data$He_exp <- NA 
+
+#Compute the HE at the end of the experiment 
 for(i in levels(data$Population)){
 temp_data_pop <- subset(data, Population==i)
-ifelse(sum(temp_data_pop$Generation_Parents)!=15,print("ERROR"),print(i))
-temp_he_remaining_gen <- 1 - (1/(2*temp_data_pop$Nb_parents))
-
+ifelse(sum(temp_data_pop$Generation_Eggs)!=21,print("ERROR"),print(i))
+temp_he_remaining_gen <- 1 - (1/(2*temp_data_pop$Nb_adults))
 #To consider extinct add this row: 
 is.na(temp_he_remaining_gen) <- sapply (temp_he_remaining_gen, is.infinite)
-
+#Compute for the whole experiment 
 temp_he_remain_exp <- prod(temp_he_remaining_gen, na.rm = TRUE)
-data_he$He_remain_exp[data_he$Population==i] <- temp_he_remain_exp
+data$He_exp[data$Population==i] <- temp_he_remain_exp
 rm(temp_he_remain_exp,temp_he_remaining_gen,temp_data_pop)
 }
 
+
+##### 
+##### 5- He_end
+##### 
 # Remaining He at the end of the experiment
-data_he$He_remain_end <- data_he$He_remain * data_he$He_remain_exp
+data$He_end <- data$He_start * data$He_exp
 
-# Remove kill population 
-data_he <- data_he[!is.na(data_he$He_remain_exp),]
-data_he <- droplevels(data_he)
+#Save these values for Phenotyping 
+data_he <- merge(x = data_he, 
+                 y = data[data$Generation_Eggs==1,
+                          c("Population","He_start",
+                             "He_exp","He_end")], 
+                 by = "Population", all.x=TRUE)
 ```
-
-
 
 
 ## Phenotyping dataset
@@ -134,52 +189,54 @@ data_phenotyping$p_larvae <- data_phenotyping$Larvae / data_phenotyping$Nb_ttx
 data_phenotyping_all <- data_phenotyping
 data_phenotyping <- data_phenotyping[data_phenotyping$Week=="5-week",]
 
+
+
+
+#Merge with He dataset
+data_phenotyping <- merge(x = data_phenotyping, 
+              y = data_he, by = "Population", all.x=TRUE)
 ``` 
 
+
+
+## Old He remain 
+```{r }
+#Upload growth rate end of experiment
+data_he <- read.table(file=here::here("data", "He_ReMaining_BeatricePop.csv"), sep=",", header=TRUE)
+data_he$Population <- as.factor(data_he$Population)
+data_he <- data_he[,c(1,3)]
+
+
+### Additional: He remaining 
+# New vector for the lost during exp
+data_he$He_remain_exp <- NA
+
+# He lost during exp
+for(i in levels(data$Population)){
+temp_data_pop <- subset(data, Population==i)
+ifelse(sum(temp_data_pop$Generation_Parents)!=15,print("ERROR"),print(i))
+temp_he_remaining_gen <- 1 - (1/(2*temp_data_pop$Nb_parents))
+
+#To consider extinct add this row: 
+is.na(temp_he_remaining_gen) <- sapply (temp_he_remaining_gen, is.infinite)
+
+temp_he_remain_exp <- prod(temp_he_remaining_gen, na.rm = TRUE)
+data_he$He_remain_exp[data_he$Population==i] <- temp_he_remain_exp
+rm(temp_he_remain_exp,temp_he_remaining_gen,temp_data_pop)
+}
+
+# Remaining He at the end of the experiment
+data_he$He_end <- data_he$He_remain * data_he$He_remain_exp
+
+# Remove kill population 
+data_he <- data_he[!is.na(data_he$He_remain_exp),]
+data_he <- droplevels(data_he)
 
 ## Merge dataset He
-```{r }
-#Add heterozygosity
-data <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
+data_old_merged <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
 
-#Add heterozygosity
+```
 
-# #To add population extinct
-# data_phenotyping_withextinct <- merge(x = data_phenotyping, y = data_he, by = "Population", all.y=TRUE)
-# data_phenotyping <- merge(x = data_phenotyping, y = data_he, by = "Population", all.x=TRUE)
-
-``` 
-
-
-## Subset dataset generation
-```{r }
-#Data beginning
-data_G2 <- data[data$Generation_Eggs==2,]
-#Data end 
-data_G6 <- data[data$Generation_Eggs==6,]
-
-``` 
-
-
-## Merge dataset phenotyping
-```{r }
-## Merge dataset phenotyping
-#merge dataset
-temp_Start <- data_G2[,c("Block","Population",
-                         "Genetic_Diversity","Lambda", "He_remain", "He_remain_end" )]
-temp_Start$ID_Rep <- 1
-temp_Start$Phenotyping <- "Initial"
-
-temp_end <- data_phenotyping[,c("Block","Population",
-                                "Genetic_Diversity","Lambda","ID_Rep", "He_remain", "He_remain_end" )]
-temp_end$Phenotyping <- "Final"
-
-data_evolution_Lambda <- rbind(temp_Start,temp_end)
-data_evolution_Lambda$Phenotyping <- factor(data_evolution_Lambda$Phenotyping, 
-                                            levels = c("Initial", "Final"))
-
-
-``` 
 
 # PLOT 
 ## Population size
@@ -266,9 +323,9 @@ PLOT_Extinction
 
 ## Growth rate G2
 ```{r }
-tapply(data_G2$Lambda,data_G2$Genetic_Diversity,mean)
+tapply(data[data$Generation_Eggs==2,]$Lambda,data[data$Generation_Eggs==2,]$Genetic_Diversity,mean)
 
-PLOT_Growth<-ggplot2::ggplot(data_G2, aes(x = Genetic_Diversity, y = Lambda, 
+PLOT_Growth<-ggplot2::ggplot(data[data$Generation_Eggs==2,], aes(x = Genetic_Diversity, y = Lambda, 
                          colour = Genetic_Diversity)) + 
   geom_boxplot(aes(group = Genetic_Diversity),outlier.colour = NA) +
   geom_jitter(width = 0.25, size = 1, alpha = 0.8) +
@@ -286,55 +343,6 @@ PLOT_Growth
 ``` 
 
 
-
-## Growth rate evolution
-```{r }
-# 
-# SUM_MEAN_start_end <- Rmisc::summarySE(data_evolution_Lambda, measurevar = c("Lambda"),
-#                        groupvars = c("Genetic_Diversity","Phenotyping"), 
-#                        na.rm=TRUE)
-# SUM_POP_start_end <- Rmisc::summarySE(data_evolution_Lambda, measurevar = c("Lambda"),
-#                        groupvars = c("Genetic_Diversity","Phenotyping",
-#                                      "Population"), 
-#                        na.rm=TRUE)
-# 
-# 
-# 
-# 
-# 
-# PLOT_Growth_startend<-ggplot(SUM_POP_start_end, aes(x = Phenotyping, 
-#                                  y = Lambda, 
-#                                  group = Population,
-#                                  colour = Genetic_Diversity)) + 
-#   geom_point(position = position_dodge(0.4), size = 0.8, alpha = 0.7) +
-#   geom_line(position = position_dodge(0.4), size = 0.2, alpha = 0.6) +
-#   ylab("Growth rate") +
-#   xlab("Phenotyping") +
-#   theme_LO
-# PLOT_Growth_startend
-# 
-# PLOT_Growth_startend_average <- PLOT_Growth_startend + 
-#   geom_point(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
-#                                 y = Lambda, 
-#                                 group = Genetic_Diversity,
-#                                 colour = Genetic_Diversity), 
-#              size = 5, position = position_dodge(0.4)) +
-#   geom_errorbar(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
-#                                 ymin = Lambda-ci, ymax = Lambda+ci, 
-#                                 group = Genetic_Diversity,
-#                                 colour = Genetic_Diversity), 
-#              size = 1, width=.2,  position = position_dodge(0.4)) +
-#   geom_line(data = SUM_MEAN_start_end, aes(x = Phenotyping, 
-#                                 y = Lambda, 
-#                                 group = Genetic_Diversity,
-#                                 colour = Genetic_Diversity), 
-#            linetype = "dashed", size = 1.5, position = position_dodge(0.4)) 
-# PLOT_Growth_startend_average
-# # 
-# # cowplot::save_plot(here::here("figures","OldPlot_Lambda_Evolution.pdf"),
-# #           PLOT_Growth_startend_average, base_height = 10/cm(1),
-# #           base_width = 15/cm(1), dpi = 610)
-``` 
 
 
 ## Life stage proportion
@@ -389,20 +397,23 @@ PLOT_prop
 
 ## Remaining heterozygosity
 ```{r }
+# ## Merge dataset phenotyping
+# #merge dataset
+# temp_Start <- data[data$Generation_Eggs==2,c("Block","Population",
+#                          "Genetic_Diversity","Lambda", "He_remain", "He_end" )]
+# temp_Start$ID_Rep <- 1
+# temp_Start$Phenotyping <- "Initial"
+# 
+# temp_end <- data_phenotyping[,c("Block","Population",
+#                                 "Genetic_Diversity","Lambda","ID_Rep", "He_remain", "He_end" )]
+# temp_end$Phenotyping <- "Final"
+# 
+# data_evolution_Lambda <- rbind(temp_Start,temp_end)
+# data_evolution_Lambda$Phenotyping <- factor(data_evolution_Lambda$Phenotyping, 
+#                                             levels = c("Initial", "Final"))
 
-# # All but with: He beginning for both and with pseudoreplication for final
-# ggplot2::ggplot(data_evolution_Lambda, aes(x = He_remain, y = Lambda, 
-#                          colour = Genetic_Diversity)) + 
-#   facet_wrap(~ Phenotyping, ncol = 1, scales = "free")+
-#   geom_point(size = 2, alpha = 0.8) +
-#   ylab("Growth rate") +
-#   theme(legend.position = "none") +
-#   xlab("Remaining heterozygosity") +
-#   theme_LO
 # 
-# 
-# 
-# PLOT_He_Initial <- ggplot2::ggplot(data_G2, aes(x = He_remain, y = Lambda, 
+# PLOT_He_Initial <- ggplot2::ggplot(data[data$Generation_Eggs==2,], aes(x = He_remain, y = Lambda, 
 #                          colour = Genetic_Diversity)) + 
 #   geom_point(size = 2, alpha = 0.8) +
 #   ylab("Growth rate") +
@@ -413,7 +424,7 @@ PLOT_prop
 # 
 # 
 # PLOT_He_End <- ggplot2::ggplot(data_evolution_Lambda[data_evolution_Lambda$Phenotyping=="Final",],
-#                                aes(x = He_remain_end, y = Lambda, 
+#                                aes(x = He_end, y = Lambda, 
 #                          colour = Genetic_Diversity)) + 
 #   geom_point(size = 2, alpha = 0.8) +
 #   ylab("Growth rate") +
@@ -422,16 +433,15 @@ PLOT_prop
 #   theme_LO
 # PLOT_He_End
 
-
 # Remove pseudoreplication: average of each population
-SUM_POP_He_Mean<- Rmisc::summarySE(data_evolution_Lambda[data_evolution_Lambda$Phenotyping=="Final",],
+SUM_POP_He_Mean<- Rmisc::summarySE(data_phenotyping,
                             measurevar = c("Lambda"),
                             groupvars = c("Genetic_Diversity",
-                                          "He_remain_end",
+                                          "He_end",
                                           "Population"), 
                             na.rm=TRUE)
 
-PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_remain_end,
+PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
                                                       y = Lambda, 
                                                       colour = Genetic_Diversity, 
                                                       size = N)) + 
@@ -449,13 +459,13 @@ PLOT_He_Final
 # # ALL WITHOUT PSEUDO
 # SUM_POP_He_ALL<- Rmisc::summarySE(data_evolution_Lambda,
 #                             measurevar = c("Lambda"),
-#                        groupvars = c("Genetic_Diversity","Phenotyping", "He_remain", "He_remain_end",
+#                        groupvars = c("Genetic_Diversity","Phenotyping", "He_remain", "He_end",
 #                                      "Population"), 
 #                        na.rm=TRUE)
 # 
-# SUM_POP_He_ALL$HE <- ifelse(SUM_POP_He_ALL$Phenotyping=="Initial",SUM_POP_He_ALL$He_remain,SUM_POP_He_ALL$He_remain_end)
+# SUM_POP_He_ALL$HE <- ifelse(SUM_POP_He_ALL$Phenotyping=="Initial",SUM_POP_He_ALL$He_remain,SUM_POP_He_ALL$He_end)
 # 
-# SUM_POP_He_ALL <- SUM_POP_He_ALL[!is.na(SUM_POP_He_ALL$He_remain_end),]
+# SUM_POP_He_ALL <- SUM_POP_He_ALL[!is.na(SUM_POP_He_ALL$He_end),]
 # SUM_POP_He_ALL <- SUM_POP_He_ALL[SUM_POP_He_ALL$HE!="-Inf",]
 # 
 # 
@@ -516,7 +526,7 @@ PLOT_He_Final
 ###### Clean dataset
 ############ 
 #Prepare clean dataset
-data_proba_extinction <- data_G6[,c("Block","Population","Genetic_Diversity","Extinction_finalstatus")]
+data_proba_extinction <- data[data$Generation_Eggs==6,c("Block","Population","Genetic_Diversity","Extinction_finalstatus")]
 data_proba_extinction$Extinction_finalstatus <- as.factor(data_proba_extinction$Extinction_finalstatus)
 data_proba_extinction$y <- ifelse(data_proba_extinction$Extinction_finalstatus == "yes", 1, 0)
 
@@ -596,20 +606,19 @@ emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ############ 
 #Analysis
 # mod0 <- lme4::glmer(Nb_adults ~ Genetic_Diversity + Block + (1|Population),  
-#       data = data_G6, family = "poisson")
+#       data = data[data$Generation_Eggs==6,], family = "poisson")
 
 
 mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
-             data = data_G6[data_G6$Extinction_finalstatus == "no",])
-
+             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
 
 mod1 <- lm(log(Nb_adults) ~ Block , 
-             data = data_G6[data_G6$Extinction_finalstatus == "no",])
+             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
 
 anova(mod0, mod1) # Effect of genetic diversity 
 
 mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
-             data = data_G6[data_G6$Extinction_finalstatus == "no",])
+             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
 
 
 summary(mod0)
@@ -1070,14 +1079,14 @@ data_predict_extinct$predict <- predict(mod0,
 ## Remaining He difference
 ```{r }
 
-Rmisc::summarySE(data_G2,
+Rmisc::summarySE(data[data$Generation_Eggs==2,],
           measurevar = c("He_remain"),
           groupvars = c("Genetic_Diversity"),
           na.rm=TRUE)
 
 
-mfull <- lm(He_remain ~ Genetic_Diversity, data=data_G2)
-mless <- lm(He_remain ~ 1, data=data_G2)
+mfull <- lm(He_remain ~ Genetic_Diversity, data=data[data$Generation_Eggs==2,])
+mless <- lm(He_remain ~ 1, data=data[data$Generation_Eggs==2,])
 anova(mfull,mless) #Keep effect
 
 
@@ -1089,7 +1098,7 @@ emmeans::emmeans(mfull, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 
 
-Rmisc::summarySE(data_G2,
+Rmisc::summarySE(data[data$Generation_Eggs==2,],
           measurevar = c("He_remain"),
           groupvars = c("Genetic_Diversity"),
           na.rm=TRUE)
@@ -1098,14 +1107,15 @@ Rmisc::summarySE(data_G2,
 
 
 #Calcul for end:
-Rmisc::summarySE(data_G2[data_G2$Extinction_finalstatus!="yes",],
-          measurevar = c("He_remain_end"),
+Rmisc::summarySE(data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",],
+          measurevar = c("He_end"),
           groupvars = c("Genetic_Diversity"),
           na.rm=TRUE)
 
-mfull <- lm(He_remain_end ~ Genetic_Diversity, data=data_G2[data_G2$Extinction_finalstatus!="yes",])
-mless <- lm(He_remain_end ~ 1, data=data_G2[data_G2$Extinction_finalstatus!="yes",])
+mfull <- lm(He_end ~ Genetic_Diversity, data=data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",])
+mless <- lm(He_end ~ 1, data=data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",])
 anova(mfull,mless) #Keep effect
+
 
 
 
@@ -1129,34 +1139,34 @@ mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population),
                    data=data_phenotyping)
 
 mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
-mod1 <- lme4::lmer(Lambda ~ He_remain_end + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+mod1 <- lme4::lmer(Lambda ~ He_end + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 mod2 <- lme4::lmer(Lambda ~ Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
-mod3 <- lme4::lmer(Lambda ~ log(He_remain_end) + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+mod3 <- lme4::lmer(Lambda ~ log(He_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
-mod5 <- lme4::lmer(Lambda ~ exp(He_remain_end) + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+mod5 <- lme4::lmer(Lambda ~ exp(He_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 MuMIn::model.sel(mod0, mod1,mod2,mod3,mod4,mod5)
 
 #Makes sense: best model log He
 x <- seq(1:100)
 y <- seq(1001:1100)
 plot(log(x),y)
-PLOT_He_withextinct
+
 
 
 #############################################################
 ##################        Analysis        ###################
 #############################################################
 
-mod3 <- lme4::lmer(Lambda ~ log(He_remain_end) + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+mod3 <- lme4::lmer(Lambda ~ log(He_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_remain_end),])
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 anova(mod3,mod4,test="Chisq") # difference
 summary(mod3)
 
@@ -1164,9 +1174,9 @@ summary(mod3)
 ##################        Predict         ###################
 #############################################################
 
-data_predict_lambda <- data.frame(He_remain_end =
-  seq(min(data_phenotyping[!is.na(data_phenotyping$He_remain_end),]$He_remain_end),
-      max(data_phenotyping[!is.na(data_phenotyping$He_remain_end),]$He_remain_end), 
+data_predict_lambda <- data.frame(He_end =
+  seq(min(data_phenotyping[!is.na(data_phenotyping$He_end),]$He_end),
+      max(data_phenotyping[!is.na(data_phenotyping$He_end),]$He_end), 
       0.01),
                                    Block = "Block4")
 
@@ -1177,24 +1187,24 @@ data_predict_lambda$lambda_predict <- predict(mod3,
  
    
 
-PLOT_He_expect <- ggplot2::ggplot() +
-  geom_line(data = data_predict_lambda, 
-                                aes(x = He_remain_end, y = lambda_predict), 
-                                linetype = "longdash", col = "grey40", size = 1.25) +
-  geom_point(data = SUM_POP_He_ALL_extinct, 
-                               aes(x = He_remain_end, y = Lambda, 
-                         colour = Genetic_Diversity, 
-                         shape = Extinction_finalstatus, 
-                         size = N), alpha = 0.7) +
-  ylab("Growth rate") +
-  xlab("Remaining heterozygosity") +
-  scale_shape_manual(values = c(19, 1)) + 
-  theme_LO + 
-  labs(color="Genetic diversity") +
-  labs(shape="Extinct population") +
-  labs(size="Replicates") 
-
-PLOT_He_expect
+# PLOT_He_expect <- ggplot2::ggplot() +
+#   geom_line(data = data_predict_lambda, 
+#                                 aes(x = He_end, y = lambda_predict), 
+#                                 linetype = "longdash", col = "grey40", size = 1.25) +
+#   geom_point(data = SUM_POP_He_ALL_extinct, 
+#                                aes(x = He_end, y = Lambda, 
+#                          colour = Genetic_Diversity, 
+#                          shape = Extinction_finalstatus, 
+#                          size = N), alpha = 0.7) +
+#   ylab("Growth rate") +
+#   xlab("Remaining heterozygosity") +
+#   scale_shape_manual(values = c(19, 1)) + 
+#   theme_LO + 
+#   labs(color="Genetic diversity") +
+#   labs(shape="Extinct population") +
+#   labs(size="Replicates") 
+# 
+# PLOT_He_expect
 # 
 # cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_withextinct,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
@@ -1256,10 +1266,10 @@ anova(m0,m1,test="Chisq")
 
 ## Adults G2 
 ```{r }
-m0 <- glm(Nb_adults ~ Genetic_Diversity + Block,  family = "poisson", data = data_G2)
+m0 <- glm(Nb_adults ~ Genetic_Diversity + Block,  family = "poisson", data = data[data$Generation_Eggs==2,])
 summary(m0)
 
-m1<- glm(Nb_adults ~ Block,  family = "poisson", data = data_G2)
+m1<- glm(Nb_adults ~ Block,  family = "poisson", data = data[data$Generation_Eggs==2,])
 anova(m0,m1,test="Chisq") # difference
 
 ############ 
