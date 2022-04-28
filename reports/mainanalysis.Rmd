@@ -302,6 +302,8 @@ PLOT_Pop_size_average
 
 #Prediction with models 
 # Test effect
+
+data$gen_square <- data$Generation_Eggs^2
 mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
                 Block  + (1|obs), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
@@ -317,6 +319,12 @@ filldata <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity),10
 filldata$Estimates <- predict(mod1, newdata=filldata, type = "response", re.form=~0)
 
 
+#Predcit estimate minimun values 
+tapply(filldata$Estimates, filldata$Genetic_Diversity, min)
+
+filldata[filldata$Estimates>=44.16&filldata$Estimates<=44.17,]
+filldata[filldata$Estimates>=51.99&filldata$Estimates<=52.00,]
+filldata[filldata$Estimates>=85.85&filldata$Estimates<=85.86,]
 
 
 ## Change name vector 
@@ -345,7 +353,7 @@ PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
   xlab("Generation") +
   theme_LO
 PLOT_Pop_size_predict
-
+# 
 # cowplot::save_plot(file = here::here("figures","PopulationSize_predict.pdf"),   PLOT_Pop_size_predict, base_height = 10/cm(1),           base_width = 15/cm(1), dpi = 610)
 
 
@@ -522,7 +530,7 @@ PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
                                                       size = N)) + 
     geom_point(alpha = 0.8) +
     ylab("Growth rate") +
-    xlab("Remaining heterozygosity") +
+    xlab("Expected heterozygosity") +
     scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse-source","Severe-bottleneck","Extreme-bottleneck"), 
@@ -530,9 +538,9 @@ PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
     labs(size="Replicates") + 
     theme_LO 
 PLOT_He_Final
-
-   
-# cowplot::save_plot(here::here("figures","Heterozygosity_Growthrate.pdf"),  
+# 
+#    
+# cowplot::save_plot(here::here("figures","Heterozygosity_Growthrate.pdf"),
 #                    PLOT_He_Final,
 #           base_height = 12/cm(1), base_width = 16/cm(1), dpi = 610)
 # 
@@ -617,7 +625,7 @@ PLOT_He_extinction <-ggplot2::ggplot(data, aes(x = factor(Generation_Eggs),
                                 shape = ID_extinction)) + 
   geom_point(position = position_dodge(0.5), size = 3, alpha = 0.6) +
   geom_line(position = position_dodge(0.5), size = 0.25, alpha = 0.4) +
-  ylab("Expected remaining heterozygozity") +
+  ylab("Expected heterozygozity") +
   scale_color_manual(values = c("black", "red")) +
   scale_shape_manual(values = c(16, 13), guide=FALSE) +
   labs(color="Extinct populations") +
@@ -1306,9 +1314,9 @@ data_predict_lambda$lambda_predict <- predict(mod3,
                                 linetype = "longdash", col = "grey40", size = 1.25) 
 
 
-# 
-cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
-          base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
+# # 
+# cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
+#           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
 
 
 ```
