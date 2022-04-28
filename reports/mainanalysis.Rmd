@@ -320,8 +320,8 @@ filldata$Estimates <- predict(mod1, newdata=filldata, type = "response", re.form
 
 
 ## Change name vector 
-vector_names <- c(`Low` = "Double-bottleneck",
-                    `Medium` = "Single-bottleneck",
+vector_names <- c(`Low` = "Extreme-bottleneck",
+                    `Medium` = "Severe-bottleneck",
                     `High` = "Diverse-source")
 
 
@@ -339,7 +339,7 @@ PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
                                colour = Genetic_Diversity), size = 1.4) + 
   scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Single-bottleneck","Double-bottleneck"), 
+                    labels = c("Diverse-source","Severe-bottleneck","Extreme-bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) +
   ylab("Population size") +
   xlab("Generation") +
@@ -371,8 +371,8 @@ length(unique(data$Population[data$Genetic_Diversity=="High"&
   length(unique(data$Population[data$Genetic_Diversity=="High"]))
 
 #Create data with percent
-vector_names <- c(`Low` = "Double-bottleneck",
-                    `Medium` = "Single-bottleneck",
+vector_names <- c(`Low` = "Extreme-bottleneck",
+                    `Medium` = "Severe-bottleneck",
                     `High` = "Diverse-source")
 f_labels = data.frame(Genetic_Diversity = c("High","Medium","Low"), 
                        label = c("Extinction = 0 %", "Extinction = 21.7 %", "Extinction = 23.5 %"))
@@ -491,8 +491,8 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
                     labels = c( "Adult", "Pupae","Larvae")) + 
   ggplot2::scale_x_discrete(breaks=c("High", "Medium", "Low"), 
                             labels=c("Diverse-\nsource", 
-                                     "Single-\nbottleneck", 
-                                      "Double-\nbottleneck")) + 
+                                     "Severe-\nbottleneck", 
+                                      "Extreme-\nbottleneck")) + 
   theme_LO
 PLOT_prop
 
@@ -525,7 +525,7 @@ PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
     xlab("Remaining heterozygosity") +
     scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Single-bottleneck","Double-bottleneck"), 
+                    labels = c("Diverse-source","Severe-bottleneck","Extreme-bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
     labs(size="Replicates") + 
     theme_LO 
