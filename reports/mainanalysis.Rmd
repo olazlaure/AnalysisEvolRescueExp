@@ -347,7 +347,7 @@ PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
 PLOT_Pop_size_predict
 
 # cowplot::save_plot(file = here::here("figures","PopulationSize_predict.pdf"),   PLOT_Pop_size_predict, base_height = 10/cm(1),           base_width = 15/cm(1), dpi = 610)
-# 
+
 
 
 ``` 
@@ -497,8 +497,8 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
 PLOT_prop
 
 
-cowplot::save_plot(here::here("figures","Life_stage_proportion.pdf"),   PLOT_prop,
-          base_height = 10/cm(1), base_width = 18/cm(1), dpi = 610)
+# cowplot::save_plot(here::here("figures","Life_stage_proportion.pdf"),   PLOT_prop,
+#           base_height = 10/cm(1), base_width = 18/cm(1), dpi = 610)
 
 
 ``` 
@@ -532,10 +532,10 @@ PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
 PLOT_He_Final
 
    
-cowplot::save_plot(here::here("figures","Heterozygosity_Growthrate.pdf"),  
-                   PLOT_He_Final,
-          base_height = 12/cm(1), base_width = 16/cm(1), dpi = 610)
-
+# cowplot::save_plot(here::here("figures","Heterozygosity_Growthrate.pdf"),  
+#                    PLOT_He_Final,
+#           base_height = 12/cm(1), base_width = 16/cm(1), dpi = 610)
+# 
 
 
 
