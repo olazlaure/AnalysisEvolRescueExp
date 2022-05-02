@@ -328,8 +328,8 @@ filldata[filldata$Estimates>=85.85&filldata$Estimates<=85.86,]
 
 
 ## Change name vector 
-vector_names <- c(`Low` = "Extreme-bottleneck",
-                    `Medium` = "Severe-bottleneck",
+vector_names <- c(`Low` = "Extreme bottleneck",
+                    `Medium` = "Strong bottleneck",
                     `High` = "Diverse-source")
 
 
@@ -347,7 +347,7 @@ PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
                                colour = Genetic_Diversity), size = 1.4) + 
   scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Severe-bottleneck","Extreme-bottleneck"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) +
   ylab("Population size") +
   xlab("Generation") +
@@ -379,8 +379,8 @@ length(unique(data$Population[data$Genetic_Diversity=="High"&
   length(unique(data$Population[data$Genetic_Diversity=="High"]))
 
 #Create data with percent
-vector_names <- c(`Low` = "Extreme-bottleneck",
-                    `Medium` = "Severe-bottleneck",
+vector_names <- c(`Low` = "Extreme bottleneck",
+                    `Medium` = "Strong bottleneck",
                     `High` = "Diverse-source")
 f_labels = data.frame(Genetic_Diversity = c("High","Medium","Low"), 
                        label = c("Extinction = 0 %", "Extinction = 21.7 %", "Extinction = 23.5 %"))
@@ -412,13 +412,13 @@ PLOT_Extinction<-ggplot2::ggplot(data,  aes(x = factor(Generation_Eggs),
   theme(legend.position = "none") +
   theme_LO
 PLOT_Extinction
-
-
-cowplot::save_plot(here::here("figures","Extinction.pdf"),   PLOT_Extinction, base_height = 8/cm(1),
-          base_width = 20/cm(1), dpi = 610)
 # 
-
-
+# 
+# cowplot::save_plot(here::here("figures","Extinction.pdf"),   PLOT_Extinction, base_height = 8/cm(1),
+#           base_width = 20/cm(1), dpi = 610)
+# # 
+# 
+# 
 
 
 PLOT_Extinction 
@@ -499,12 +499,12 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
                     labels = c( "Adult", "Pupae","Larvae")) + 
   ggplot2::scale_x_discrete(breaks=c("High", "Medium", "Low"), 
                             labels=c("Diverse-\nsource", 
-                                     "Severe-\nbottleneck", 
-                                      "Extreme-\nbottleneck")) + 
+                                     "Strong \nbottleneck", 
+                                      "Extreme \nbottleneck")) + 
   theme_LO
 PLOT_prop
 
-
+# 
 # cowplot::save_plot(here::here("figures","Life_stage_proportion.pdf"),   PLOT_prop,
 #           base_height = 10/cm(1), base_width = 18/cm(1), dpi = 610)
 
@@ -533,7 +533,7 @@ PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
     xlab("Expected heterozygosity") +
     scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Severe-bottleneck","Extreme-bottleneck"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
     labs(size="Replicates") + 
     theme_LO 
@@ -1313,8 +1313,8 @@ data_predict_lambda$lambda_predict <- predict(mod3,
                                 aes(x = He_end, y = lambda_predict),
                                 linetype = "longdash", col = "grey40", size = 1.25) 
 
-
-# # 
+# 
+# #
 # cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
 
