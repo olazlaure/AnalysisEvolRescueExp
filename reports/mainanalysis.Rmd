@@ -246,6 +246,47 @@ data_old_merged <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
 ```
 
 
+
+## Survival data
+```{r }
+library(survival)
+library(lubridate)
+library(ggsurvfit)
+library("gtsummary")
+library("tidycmprsk")
+library("condSURV")
+library("survminer")
+
+#########
+
+
+data_survival <- data[data$Generation_Parents==0,c("Population","Block","Genetic_Diversity")]
+data_survival$Gen_eggs_extinct <- max(data$Generation_Eggs) 
+data_survival$Survival <- "yes" 
+
+#Format data
+for (i in unique(data_survival$Population)) {
+  if (data$Extinction_finalstatus[data$Population==i&data$Generation_Eggs==1] == "yes" ) {
+    data_survival$Gen_eggs_extinct[data_survival$Population==i]<-
+      min(data$Generation_Eggs[data$Population==i&data$First_Throw=="extinct"])
+    data_survival$Survival[data_survival$Population==i] <- "extinct"
+  }else{
+    print(i)
+  }
+}
+
+
+  str(data_survival)
+data_survival$Survival <- as.factor(data_survival$Survival)
+#Note: the Surv() function in the {survival} package accepts by default TRUE/FALSE, where TRUE is event and FALSE is censored; 1/0 where 1 is event and 0 is censored; or 2/1 where 2 is event and 1 is censored. Please take care to ensure the event indicator is properly formatted.
+data_survival$status <- ifelse(data_survival$Survival=="extinct", 1, 0)
+  
+
+
+```
+
+
+
 # PLOT 
 ## Population size
 ```{r }
@@ -642,6 +683,73 @@ PLOT_He_extinction
 
 ``` 
 
+## Survival vs He 
+```{r }
+
+s2 <- survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+summary(s2)
+
+# Create a summary dataset 
+SUM_survprob <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity), each =6), 
+                       Generation_Eggs = rep(seq(1:6), n=3),
+                       SurvProb = 1, 
+                       se = 0)
+
+
+SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
+                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$surv[1]
+SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
+                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$surv[2]
+SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
+                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$surv[3]
+
+SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
+                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$surv[4]
+SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
+                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$surv[5]
+SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
+                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$surv[6]
+  
+SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
+                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$std.err[1]
+SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
+                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$std.err[2]
+SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
+                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$std.err[3]
+
+SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
+                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$std.err[4]
+SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
+                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$std.err[5]
+SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
+                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$std.err[6]
+  
+
+data_survprob_he <- merge(x = data, y = SUM_survprob, by = c("Genetic_Diversity", "Generation_Eggs"), all.x=TRUE)
+head(data_survprob_he)
+
+
+Plot_survival <- ggplot2::ggplot(data_survprob_he, aes(x = He_remain,  y = SurvProb ,  colour = Genetic_Diversity)) + 
+    geom_point(alpha = 0.8) +
+    ylab("Survival probability") +
+    xlab("Expected heterozygosity") +
+    scale_color_manual(name="Genetic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
+    labs(size="Replicates") + 
+    theme_LO 
+
+
+
+cowplot::save_plot(here::here("figures","Survival_function_He.pdf"),
+                   Plot_survival,
+          base_height = 12/cm(1), base_width = 14/cm(1), dpi = 610)
+
+
+
+```
+
 
 
 # ANALYSIS 
@@ -721,6 +829,160 @@ emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 ``` 
 
+## Survival analysis
+```{r }
+str(data_survival)
+#Note: the Surv() function in the {survival} package accepts by default TRUE/FALSE, where TRUE is event and FALSE is censored; 1/0 where 1 is event and 0 is censored; or 2/1 where 2 is event and 1 is censored. Please take care to ensure the event indicator is properly formatted.
+  
+
+# The Surv() function from the {survival} package creates a survival object for use as the response in a model formula. There will be one entry for each subject that is the survival time, which is followed by a + if the subject was censored. Let’s look at the first 10 observations:
+Surv(data_survival$Gen_eggs_extinct, data_survival$status)
+
+#Surv(data_survival_all$Gen_eggs_extinct, data_survival$status)
+
+
+
+# The survfit() function creates survival curves using the Kaplan-Meier method based on a formula. Let’s generate the overall survival curve for the entire cohort, assign it to object s1, and look at the structure using str():
+s1 <- survfit(Surv(Gen_eggs_extinct, status) ~ 1, data = data_survival)
+str(s1)
+# time: the timepoints at which the curve has a step, i.e. at least one event occurred
+# surv: the estimate of survival at the corresponding time
+
+
+   
+# The {ggsurvfit} package works best if you create the survfit object using the included ggsurvfit::survfit2() function, which uses the same syntax to what we saw previously with survival::survfit(). The ggsurvfit::survfit2() tracks the environment from the function call, which allows the plot to have better default values for labeling and p-value reporting.
+# 
+
+####
+#### PLOT 
+####
+ggsurvfit::survfit2(Surv(Gen_eggs_extinct, status) ~ 1, data = data_survival) %>% 
+  ggsurvfit() +
+  ggplot2::labs( x = "Generation",
+        y = "Overall survival probability") + 
+  add_confidence_interval()  +
+  add_risktable()
+
+summary(survfit(Surv(Gen_eggs_extinct, status) ~ 1, data = data_survival))
+
+
+
+##### COMPARISONS ACROSS GROUPS
+# We can conduct between-group significance tests using a log-rank test. The log-rank test equally weights observations over the entire follow-up time and is the most common way to compare survival times between groups. There are versions that more heavily weight the early or late follow-up that could be more appropriate depending on the research question (see ?survdiff for different test options).
+# 
+# We get the log-rank p-value using the survdiff function. For example, we can test whether there was a difference in survival time according to the demography history in the lung data:
+  
+  
+
+#Comparison 
+survdiff(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+
+summary(survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival))
+
+
+
+
+####
+#### PLOT 
+####
+plot_survival <- ggsurvfit::survfit2(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival) %>% 
+  ggsurvfit(size = 2) +
+  labs( x = "Generation",
+        y = "Overall survival probability") + 
+  add_confidence_interval(alpha = 0.1)  + 
+  add_censor_mark(size = 8, shape = "x") +
+  scale_fill_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
+  scale_color_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    values = c("#00AFBB", "#E7B800", "#FC4E07"))  #+  add_risktable()
+plot_survival
+
+
+cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis.pdf"),   
+                   plot_survival, base_height = 10/cm(1),  base_width = 15/cm(1), dpi = 610)
+
+
+# COX representation 
+coxph(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+
+coxph(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival) %>% 
+  gtsummary::tbl_regression(exp = TRUE) 
+
+# The quantity of interest from a Cox regression model is a hazard ratio (HR). The HR represents the ratio of hazards between two groups at any particular point in time. The HR is interpreted as the instantaneous rate of occurrence of the event of interest in those who are still at risk for the event. It is not a risk, though it is commonly mis-interpreted as such. If you have a regression parameter β, then HR = exp(β).
+# 
+# A HR < 1 indicates reduced hazard of death whereas a HR > 1 indicates an increased hazard of death.
+# 
+# So the HR = 0.59 implies that 0.59 times as many females are dying as males, at any given time. Stated differently, females have a significantly lower hazard of death than males in these data.
+
+
+
+
+
+
+
+### OTHER REPRESENTATION :  
+s2 <- survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+summary(s2)
+print(s2)
+# Access to the sort summary table
+summary(s2)$table
+
+d <- data.frame(time = s2$time,
+                  n.risk = s2$n.risk,
+                  n.event = s2$n.event,
+                  n.censor = s2$n.censor,
+                  surv = s2$surv,
+                  upper = s2$upper,
+                  lower = s2$lower)
+head(d)
+
+
+#library("survminer")
+plot2 <- survminer::ggsurvplot(s2,
+                               pval = TRUE,             # show p-value of log-rank test.
+                               #pval.coord  = c(1,0.2), 
+                               pval.size = 5, 
+                               conf.int = TRUE,         # show confidence intervals for point estimaes of survival curves.
+                               # conf.int.style = "step",  # customize style of confidence intervals
+                               conf.int.style = "ribbon",  # customize style of confidence intervals 
+                               conf.int.alpha = 0.3,  # customize style of confidence intervals
+                               censor = TRUE, 
+                               censor.shape = "x", 
+                               censor.size = 6, 
+                               xlab = "Generation",   # customize X axis label.
+                               break.time.by = 1,     # break X axis in time intervals by 1
+                               ggtheme = theme_light(), # customize plot and risk table with a theme.
+                              #risk.table = TRUE, # Add risk table
+                              #linetype = "strata", # Change line type by groups
+                               risk.table = "abs_pct",  # absolute number and percentage at risk.
+                               risk.table.y.text.col = T,# colour risk table text annotations.
+                               risk.table.y.text = FALSE,# show bars instead of names in text annotations in legend of risk table.
+                               risk.table.col = "strata", # Change risk table color by groups
+                               legend.labs = c("Diverse-source","Strong bottleneck","Extreme bottleneck"),   
+                               legend = c("right"),
+                              legend.title = c("Demographic\nhistory:"),   
+                               palette = c("#00AFBB", "#E7B800", "#FC4E07")) 
+
+
+
+plot2
+
+# cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis_V2.pdf"),   
+#                    plot2, base_height = 10/cm(1),  base_width = 15/cm(1), dpi = 610)
+
+
+
+# Fit a Cox proportional hazards model
+# fit.coxph <- coxph(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+# ggforest(fit.coxph, data = data_survival)
+
+
+
+``` 
 
 
 ## Population size G6
@@ -1084,7 +1346,57 @@ emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ``` 
 
 
+## Variance over time 
+```{r }
+data$gen_square <- data$Generation_Eggs^2
+# Initial_model<- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+#                 Block  + (1|obs), 
+#             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
+#             family = "poisson")
 
+data_G2_all <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
+
+data_G2_all <- data_G2_all[complete.cases(data_G2_all$Nb_adults), ]
+Initial_model<- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+                Block  + (1|obs), 
+            data = data_G2_all, 
+            family = "poisson")
+
+data_G2_all$resid <- resid(Initial_model)
+
+
+model_withrandomeffect <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+                Block  + (1|obs) + (1|Genetic_Diversity:Generation_Eggs) , 
+            data = data_G2_all, 
+            family = "poisson")
+model_withoutrandomeffect <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+                Block  + (1|obs) , 
+            data = data_G2_all, 
+            family = "poisson")
+
+anova(model_withrandomeffect,model_withoutrandomeffect, test = "Chisq")
+
+summary(model_withrandomeffect)
+
+
+#PLOT RESIDUALS
+
+ggplot2::ggplot(data_G2_all, 
+                               aes(x = factor(Generation_Eggs), 
+                                y = resid)) + 
+  geom_point(aes(group = Population,
+                 colour = Genetic_Diversity), 
+             position = position_dodge(0.4), size = 0.7, alpha = 0.5) +
+  scale_color_manual(name="Genetic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  ylab("Resid(pop size)") +
+  xlab("Generation") +
+  theme_LO
+
+```           
+            
 ## Growth rate G6
 ```{r }
 head(data_phenotyping)
