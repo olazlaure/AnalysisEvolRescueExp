@@ -1355,16 +1355,35 @@ data$gen_square <- data$Generation_Eggs^2
 #             family = "poisson")
 
 data_G2_all <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
-
 data_G2_all <- data_G2_all[complete.cases(data_G2_all$Nb_adults), ]
+
 Initial_model<- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
                 Block  + (1|obs), 
             data = data_G2_all, 
             family = "poisson")
-
 data_G2_all$resid <- resid(Initial_model)
 
+PLOT_Pop_size_predict
 
+#PLOT RESIDUALS
+
+ggplot2::ggplot(data_G2_all, aes(x = factor(Generation_Eggs),  
+                                 y = resid, 
+                                 colour = Genetic_Diversity)) + 
+  geom_boxplot(outlier.color = NA) +
+  geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
+  scale_color_manual(name="Genetic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  ylab("Resid(pop size)") +
+  xlab("Generation") +
+  theme_LO
+
+
+########### OPTION A: Test random effects 
+
+# Test variances with residuals and random effects: 
 model_withrandomeffect <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
                 Block  + (1|obs) + (1|Genetic_Diversity:Generation_Eggs) , 
             data = data_G2_all, 
@@ -1375,25 +1394,58 @@ model_withoutrandomeffect <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diver
             family = "poisson")
 
 anova(model_withrandomeffect,model_withoutrandomeffect, test = "Chisq")
+AIC(model_withrandomeffect)
+AIC(model_withoutrandomeffect) 
+#Best model: without random effects 
 
-summary(model_withrandomeffect)
+summary(model_withoutrandomeffect)
+
+#Note: should be the same as: 
+model_lm_withrandomeffects <- lme4::lmer(resid ~ (1|Genetic_Diversity:Generation_Eggs), data = data_G2_all)
+lmerTest::rand(model_lm_withrandomeffects)
 
 
-#PLOT RESIDUALS
+########### OPTION B: Test with Levene's test 
 
-ggplot2::ggplot(data_G2_all, 
-                               aes(x = factor(Generation_Eggs), 
-                                y = resid)) + 
-  geom_point(aes(group = Population,
-                 colour = Genetic_Diversity), 
-             position = position_dodge(0.4), size = 0.7, alpha = 0.5) +
-  scale_color_manual(name="Genetic history",
-                     breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
-                    values = c("#00AFBB", "#E7B800", "#FC4E07")) +
-  ylab("Resid(pop size)") +
-  xlab("Generation") +
-  theme_LO
+# Test variances with Levene's test 
+tapply(data_G2_all$resid, list(data_G2_all$Generation_Eggs, data_G2_all$Genetic_Diversity),var)
+
+# Levene’s test on the varianc
+library(car)
+# Using leveneTest()
+car::leveneTest(resid ~ interaction(Generation_Eggs, Genetic_Diversity), data = data_G2_all)
+
+# PairedData::levene.var.test(data_G2_all$dat[df$Genetic_Diversity=="A"], data_G2_all$dat[df$Genetic_Diversity=="B"]) 
+# 
+# library("PairedData") 
+# 
+# leveneTest(data_G2_all$resid[data_G2_all$Genetic_Diversity=="High"&
+#                                     data_G2_all$Generation_Eggs==2],
+#                 data_G2_all$resid[data_G2_all$Genetic_Diversity=="Low"&
+#                                     data_G2_all$Generation_Eggs==2])
+# 
+# 
+# ?levene.var.test()
+# 
+# 
+# ?median()
+# ?leveneTest()
+# 
+
+
+#OPTION C: Check heteroscedasticity of residuals 
+
+#Breusch-Pagan test 
+
+library(lmtest)
+lmtest::bptest(Initial_model)
+#p-value is not significant (i.e., >0.05), we do not reject the null hypothesis. Therefore, we assume that the residuals are homoscedastic
+
+library(skedastic)
+#install.packages("skedastic")
+skedastic::white_lm(Initial_model)
+
+car::ncvTest(Initial_model)  # Breusch-Pagan test
 
 ```           
             
