@@ -1346,14 +1346,9 @@ emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ``` 
 
 
-## Variance over time 
+## Variance over time (residuals)
 ```{r }
 data$gen_square <- data$Generation_Eggs^2
-# Initial_model<- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-#                 Block  + (1|obs), 
-#             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
-#             family = "poisson")
-
 data_G2_all <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 data_G2_all <- data_G2_all[complete.cases(data_G2_all$Nb_adults), ]
 
@@ -1380,8 +1375,9 @@ ggplot2::ggplot(data_G2_all, aes(x = factor(Generation_Eggs),
   xlab("Generation") +
   theme_LO
 
-
+########### 
 ########### OPTION A: Test random effects 
+########### 
 
 # Test variances with residuals and random effects: 
 model_withrandomeffect <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
@@ -1404,14 +1400,14 @@ summary(model_withoutrandomeffect)
 model_lm_withrandomeffects <- lme4::lmer(resid ~ (1|Genetic_Diversity:Generation_Eggs), data = data_G2_all)
 lmerTest::rand(model_lm_withrandomeffects)
 
-
-########### OPTION B: Test with Levene's test 
+########### 
+########### OPTION B: Test with Levene's test on residuals
+########### 
 
 # Test variances with Levene's test 
 tapply(data_G2_all$resid, list(data_G2_all$Generation_Eggs, data_G2_all$Genetic_Diversity),var)
 
 # Levene’s test on the varianc
-library(car)
 # Using leveneTest()
 car::leveneTest(resid ~ interaction(Generation_Eggs, Genetic_Diversity), data = data_G2_all)
 
@@ -1432,20 +1428,81 @@ car::leveneTest(resid ~ interaction(Generation_Eggs, Genetic_Diversity), data = 
 # ?leveneTest()
 # 
 
-
-#OPTION C: Check heteroscedasticity of residuals 
-
+########### 
+########### OPTION C: Check heteroscedasticity of residuals 
+########### 
 #Breusch-Pagan test 
 
-library(lmtest)
-lmtest::bptest(Initial_model)
+#library(lmtest)
+#lmtest::bptest(Initial_model)
 #p-value is not significant (i.e., >0.05), we do not reject the null hypothesis. Therefore, we assume that the residuals are homoscedastic
 
-library(skedastic)
+#library(skedastic)
 #install.packages("skedastic")
-skedastic::white_lm(Initial_model)
+#skedastic::white_lm(Initial_model)
 
-car::ncvTest(Initial_model)  # Breusch-Pagan test
+
+
+
+
+########### 
+########### OPTION D: Test with Levene's test on data
+########### 
+
+# Test variances with Levene's test 
+tapply(data_G2_all$resid, list(data_G2_all$Generation_Eggs, data_G2_all$Genetic_Diversity),var)
+
+# Levene’s test on the varianc
+# Using leveneTest()
+car::leveneTest(resid ~ interaction(Generation_Eggs, Genetic_Diversity), data = data_G2_all)
+
+```           
+            
+## Variance over time (raw data)
+```{r }
+
+ggplot2::ggplot(data[data$Extinction_finalstatus=="no",], 
+                aes(x = factor(Generation_Eggs),  
+                                 y = Nb_adults, 
+                                 colour = Genetic_Diversity)) + 
+  geom_boxplot(outlier.color = NA) +
+  geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
+  scale_color_manual(name="Genetic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    values = c("#00AFBB", "#E7B800", "#FC4E07")) +
+  ylab("Population size") +
+  xlab("Generation") +
+  geom_text(x=4, y=450, label="**", size = 5, color = "Black") +
+  theme_LO
+
+
+
+
+
+########### 
+########### OPTION D: Test with Levene's test on data
+########### 
+
+# Test variances with Levene's test 
+tapply(data[data$Extinction_finalstatus=="no",]$Nb_adults, 
+       list(data[data$Extinction_finalstatus=="no",]$Generation_Eggs,
+            data[data$Extinction_finalstatus=="no",]$Genetic_Diversity),var, na.rm=TRUE)
+
+# Levene’s test on the varianc
+# Using leveneTest()
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no",])
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==5,])
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==4,])
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==6,])
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==3,])
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==2,])
 
 ```           
             
