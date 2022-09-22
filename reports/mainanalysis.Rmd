@@ -351,6 +351,10 @@ mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Gen
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
             family = "poisson")
 
+
+
+  dim(data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
+
 #Predict data
 filldata <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity),100), 
                        Generation_Eggs = rep(seq(2,6, length = 100),each=3),
@@ -370,9 +374,9 @@ filldata[filldata$Estimates>=85.85&filldata$Estimates<=85.86,]
 
 
 ## Change name vector 
-vector_names <- c(`Low` = "Extreme bottleneck",
-                    `Medium` = "Strong bottleneck",
-                    `High` = "Diverse-source")
+vector_names <- c(`Low` = "Strong bottleneck",
+                    `Medium` = "Intermediate bottleneck",
+                    `High` = "Diverse")
 
 
 PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",], 
@@ -389,7 +393,7 @@ PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
                                colour = Genetic_Diversity), size = 1.4) + 
   scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) +
   ylab("Population size") +
   xlab("Generation") +
@@ -397,8 +401,8 @@ PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
 PLOT_Pop_size_predict
 # 
 # cowplot::save_plot(file = here::here("figures","PopulationSize_predict.pdf"),   PLOT_Pop_size_predict, base_height = 10/cm(1),           base_width = 15/cm(1), dpi = 610)
-
-
+# 
+# 
 
 ``` 
 
@@ -421,9 +425,9 @@ length(unique(data$Population[data$Genetic_Diversity=="High"&
   length(unique(data$Population[data$Genetic_Diversity=="High"]))
 
 #Create data with percent
-vector_names <- c(`Low` = "Extreme bottleneck",
-                    `Medium` = "Strong bottleneck",
-                    `High` = "Diverse-source")
+vector_names <- c(`Low` = "Strong bottleneck",
+                    `Medium` = "Intermediate bottleneck",
+                    `High` = "Diverse")
 f_labels = data.frame(Genetic_Diversity = c("High","Medium","Low"), 
                        label = c("Extinction = 0 %", "Extinction = 21.7 %", "Extinction = 23.5 %"))
 f_labels$Genetic_Diversity <- factor(f_labels$Genetic_Diversity, 
@@ -458,9 +462,9 @@ PLOT_Extinction
 # 
 # cowplot::save_plot(here::here("figures","Extinction.pdf"),   PLOT_Extinction, base_height = 8/cm(1),
 #           base_width = 20/cm(1), dpi = 610)
-# # 
+# #
 # 
-# 
+
 
 
 PLOT_Extinction 
@@ -540,16 +544,16 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
                     breaks = c("p_adults", "p_pupae", "p_larvae"),
                     labels = c( "Adult", "Pupae","Larvae")) + 
   ggplot2::scale_x_discrete(breaks=c("High", "Medium", "Low"), 
-                            labels=c("Diverse-\nsource", 
-                                     "Strong \nbottleneck", 
-                                      "Extreme \nbottleneck")) + 
+                            labels=c("Diverse", 
+                                     "Intermediate\nbottleneck", 
+                                      "Strong \nbottleneck")) + 
   theme_LO
 PLOT_prop
 
 # 
 # cowplot::save_plot(here::here("figures","Life_stage_proportion.pdf"),   PLOT_prop,
 #           base_height = 10/cm(1), base_width = 18/cm(1), dpi = 610)
-
+# 
 
 ``` 
 
@@ -575,18 +579,18 @@ PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
     xlab("Expected heterozygosity") +
     scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
     labs(size="Replicates") + 
     theme_LO 
 PLOT_He_Final
 # 
-#    
+# 
 # cowplot::save_plot(here::here("figures","Heterozygosity_Growthrate.pdf"),
 #                    PLOT_He_Final,
 #           base_height = 12/cm(1), base_width = 16/cm(1), dpi = 610)
 # 
-
+# 
 
 
 
@@ -735,7 +739,7 @@ Plot_survival <- ggplot2::ggplot(data_survprob_he, aes(x = He_remain,  y = SurvP
     xlab("Expected heterozygosity") +
     scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
     labs(size="Replicates") + 
     theme_LO 
@@ -827,7 +831,45 @@ p_low
 emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
 
 
+
+
+
 ``` 
+
+
+
+##  Time to extinction 
+```{r }
+
+
+data_timeextinction<-data[data$First_Throw=="extinct",]
+data_timeextinction <- data_timeextinction[complete.cases(data_timeextinction$Nb_adults), ]
+data_timeextinction
+
+tapply(data_timeextinction$Generation_Eggs,data_timeextinction$Genetic_Diversity,mean)
+
+
+#Test time of extinction
+mod1 <- glm(Generation_Eggs ~ Genetic_Diversity + Block,
+                    data = data_timeextinction, family = "poisson")
+mod0 <- glm(Generation_Eggs ~  Block,
+                    data = data_timeextinction, family = "poisson")
+
+anova(mod0, mod1, test = "Chisq")
+#We keep genetic diversity 
+
+# Perform the lrtest 
+(A <- logLik(mod1))
+(B <- logLik(mod0))
+#Since the logLik() function gives more information than the numeric value, use the as.numeric() function to isolate the numeric value
+(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+#df = 5 - 3 = 2
+(p.val <- pchisq(teststat, df = 2, lower.tail = FALSE))
+
+lmtest::lrtest(mod0,mod1)
+
+``` 
+
 
 ## Survival analysis
 ```{r }
@@ -893,11 +935,11 @@ plot_survival <- ggsurvfit::survfit2(Surv(Gen_eggs_extinct, status) ~ Genetic_Di
   add_censor_mark(size = 8, shape = "x") +
   scale_fill_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
   scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07"))  #+  add_risktable()
 plot_survival
 
@@ -962,7 +1004,7 @@ plot2 <- survminer::ggsurvplot(s2,
                                risk.table.y.text.col = T,# colour risk table text annotations.
                                risk.table.y.text = FALSE,# show bars instead of names in text annotations in legend of risk table.
                                risk.table.col = "strata", # Change risk table color by groups
-                               legend.labs = c("Diverse-source","Strong bottleneck","Extreme bottleneck"),   
+                               legend.labs = c("Diverse","Intermediate bottleneck","Strong bottleneck"),   
                                legend = c("right"),
                               legend.title = c("Demographic\nhistory:"),   
                                palette = c("#00AFBB", "#E7B800", "#FC4E07")) 
@@ -1369,7 +1411,7 @@ ggplot2::ggplot(data_G2_all, aes(x = factor(Generation_Eggs),
   geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
   scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) +
   ylab("Resid(pop size)") +
   xlab("Generation") +
@@ -1469,7 +1511,7 @@ ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
   geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
   scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse-source","Strong bottleneck","Extreme bottleneck"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB", "#E7B800", "#FC4E07")) +
   ylab("Population size") +
   xlab("Generation") +
@@ -1503,6 +1545,10 @@ car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity),
                 data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==3,])
 car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
                 data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==2,])
+
+
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==4&data$Genetic_Diversity!="Medium",])
 
 ```           
             
@@ -1739,7 +1785,7 @@ data_predict_lambda$lambda_predict <- predict(mod3,
 # #
 # cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
-
+# 
 
 ```
 
