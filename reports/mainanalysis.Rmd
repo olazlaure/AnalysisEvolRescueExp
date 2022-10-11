@@ -55,7 +55,6 @@ data$Block <- as.factor(data$Block)
 data$Population <- as.factor(data$Population)
 data$Extinction_finalstatus <- as.factor(data$Extinction_finalstatus)
 
-
 #Order levels 
 data$Genetic_Diversity <- plyr::revalue(data$Genetic_Diversity, c("Med"="Medium"))
 data$Genetic_Diversity <- factor(data$Genetic_Diversity, levels = c("High", "Medium", "Low"))
@@ -66,6 +65,11 @@ str(data)
 head(data)
 tail(data)
 dim(data)
+
+
+
+#Add variable 
+data$gen_square <- data$Generation_Eggs^2
 
 ``` 
 
@@ -92,7 +96,7 @@ data <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
 ##### 
 ##### 1- He_start
 #####
-colnames(data)[27] <- "He_start"
+colnames(data)[28] <- "He_start"
 
 
 
@@ -188,7 +192,7 @@ data_phenotyping$p_adults <- data_phenotyping$Adults  / data_phenotyping$Nb_ttx
 data_phenotyping$p_pupae <- data_phenotyping$Pupae / data_phenotyping$Nb_ttx
 data_phenotyping$p_larvae <- data_phenotyping$Larvae / data_phenotyping$Nb_ttx
 
-data_phenotyping_all <- data_phenotyping
+data_phenotyping_4week <- data_phenotyping[data_phenotyping$Week=="4-week",]
 data_phenotyping <- data_phenotyping[data_phenotyping$Week=="5-week",]
 
 
@@ -197,10 +201,17 @@ data_phenotyping <- data_phenotyping[data_phenotyping$Week=="5-week",]
 #Merge with He dataset
 data_phenotyping <- merge(x = data_phenotyping, 
               y = data_he, by = "Population", all.x=TRUE)
+data_phenotyping_4week <- merge(x = data_phenotyping_4week, 
+              y = data_he, by = "Population", all.x=TRUE)
 
 #Clean if less than 30 parents 
 pop_possible<-unique(data$Population[data$Generation_Eggs==5&data$Nb_adults>=30])
 data_phenotyping <- data_phenotyping[data_phenotyping$Population %in% pop_possible,]
+
+pop_possible<-unique(data$Population[data$Generation_Eggs==4&data$Nb_adults>=30])
+data_phenotyping_4week <- data_phenotyping_4week[data_phenotyping_4week$Population %in% pop_possible,]
+
+data_phenotyping_all <- rbind(data_phenotyping,data_phenotyping_4week)
 
 
 ``` 
@@ -209,39 +220,39 @@ data_phenotyping <- data_phenotyping[data_phenotyping$Population %in% pop_possib
 
 ## Old He remain 
 ```{r }
-#Upload growth rate end of experiment
-data_he <- read.table(file=here::here("data", "He_ReMaining_BeatricePop.csv"), sep=",", header=TRUE)
-data_he$Population <- as.factor(data_he$Population)
-data_he <- data_he[,c(1,3)]
-
-
-### Additional: He remaining 
-# New vector for the lost during exp
-data_he$He_remain_exp <- NA
-
-# He lost during exp
-for(i in levels(data$Population)){
-temp_data_pop <- subset(data, Population==i)
-ifelse(sum(temp_data_pop$Generation_Parents)!=15,print("ERROR"),print(i))
-temp_he_remaining_gen <- 1 - (1/(2*temp_data_pop$Nb_parents))
-
-#To consider extinct add this row: 
-is.na(temp_he_remaining_gen) <- sapply (temp_he_remaining_gen, is.infinite)
-
-temp_he_remain_exp <- prod(temp_he_remaining_gen, na.rm = TRUE)
-data_he$He_remain_exp[data_he$Population==i] <- temp_he_remain_exp
-rm(temp_he_remain_exp,temp_he_remaining_gen,temp_data_pop)
-}
-
-# Remaining He at the end of the experiment
-data_he$He_end <- data_he$He_remain * data_he$He_remain_exp
-
-# Remove kill population 
-data_he <- data_he[!is.na(data_he$He_remain_exp),]
-data_he <- droplevels(data_he)
-
-## Merge dataset He
-data_old_merged <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
+# #Upload growth rate end of experiment
+# data_he <- read.table(file=here::here("data", "He_ReMaining_BeatricePop.csv"), sep=",", header=TRUE)
+# data_he$Population <- as.factor(data_he$Population)
+# data_he <- data_he[,c(1,3)]
+# 
+# 
+# ### Additional: He remaining 
+# # New vector for the lost during exp
+# data_he$He_remain_exp <- NA
+# 
+# # He lost during exp
+# for(i in levels(data$Population)){
+# temp_data_pop <- subset(data, Population==i)
+# ifelse(sum(temp_data_pop$Generation_Parents)!=15,print("ERROR"),print(i))
+# temp_he_remaining_gen <- 1 - (1/(2*temp_data_pop$Nb_parents))
+# 
+# #To consider extinct add this row: 
+# is.na(temp_he_remaining_gen) <- sapply (temp_he_remaining_gen, is.infinite)
+# 
+# temp_he_remain_exp <- prod(temp_he_remaining_gen, na.rm = TRUE)
+# data_he$He_remain_exp[data_he$Population==i] <- temp_he_remain_exp
+# rm(temp_he_remain_exp,temp_he_remaining_gen,temp_data_pop)
+# }
+# 
+# # Remaining He at the end of the experiment
+# data_he$He_end <- data_he$He_remain * data_he$He_remain_exp
+# 
+# # Remove kill population 
+# data_he <- data_he[!is.na(data_he$He_remain_exp),]
+# data_he <- droplevels(data_he)
+# 
+# ## Merge dataset He
+# data_old_merged <- merge(x = data, y = data_he, by = "Population", all.x=TRUE)
 
 ```
 
@@ -345,15 +356,14 @@ PLOT_Pop_size_average
 #Prediction with models 
 # Test effect
 
-data$gen_square <- data$Generation_Eggs^2
-mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+# data$gen_square <- data$Generation_Eggs^2
+mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity +
+                      gen_square*Genetic_Diversity + 
                 Block  + (1|obs), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
             family = "poisson")
 
 
-
-  dim(data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 
 #Predict data
 filldata <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity),100), 
@@ -558,7 +568,7 @@ PLOT_prop
 ``` 
 
 
-## Remaining heterozygosity
+## Growth rate and He
 ```{r }
 
 # Remove pseudoreplication: average of each population
@@ -644,6 +654,69 @@ PLOT_He_Final
 
 
 ``` 
+
+
+
+
+## Lifestage and He
+```{r }
+
+SUM_Prop_adults<- Rmisc::summarySE(data_phenotyping_all, 
+                        measurevar = c("p_adults"),
+                       groupvars = c("Genetic_Diversity","Week", "Population", "He_end"), 
+                       na.rm = TRUE)
+colnames(SUM_Prop_adults)[6]<-"prop" 
+SUM_Prop_adults$lifestage <- "adults" 
+
+
+SUM_Prop_pupae<- Rmisc::summarySE(data_phenotyping_all, 
+                        measurevar = c("p_pupae"),
+                       groupvars = c("Genetic_Diversity","Week", "Population", "He_end"), 
+                       na.rm = TRUE)
+colnames(SUM_Prop_pupae)[6]<-"prop" 
+SUM_Prop_pupae$lifestage <- "pupae" 
+
+SUM_Prop_larvae<- Rmisc::summarySE(data_phenotyping_all, 
+                        measurevar = c("p_larvae"),
+                       groupvars = c("Genetic_Diversity","Week", 
+                                     "Population", "He_end"), 
+                       na.rm = TRUE)
+colnames(SUM_Prop_larvae)[6]<-"prop" 
+SUM_Prop_larvae$lifestage <- "larvae" 
+
+
+SUM_Prop_POP <- rbind(SUM_Prop_adults, SUM_Prop_pupae, SUM_Prop_larvae)
+
+
+
+PLOT_Proportion_lifestage <- ggplot2::ggplot(SUM_Prop_POP, aes(x = He_end,
+                                                      y = prop, 
+                                                      colour = Genetic_Diversity, 
+                                                      size = N)) + 
+    facet_grid( Week ~ factor(lifestage, levels=c('larvae','pupae','adults'))) +
+    geom_point(alpha = 0.8) +
+    ylab("Proportion") +
+    xlab("Expected heterozygosity") +
+    scale_color_manual(name="Genetic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    values = c("#00AFBB", "#E7B800", "#FC4E07")) + 
+    labs(size="Replicates") + 
+    theme_LO 
+PLOT_Proportion_lifestage
+
+
+ 
+ cowplot::save_plot(here::here("figures","Life_stage_proportion_He.pdf"),
+            PLOT_Proportion_lifestage,
+           base_height = 14/cm(1), base_width = 36/cm(1), dpi = 610)
+ 
+
+# 
+``` 
+
+
+
 
 ## He over time 
 ```{r }
@@ -1027,42 +1100,9 @@ plot2
 ``` 
 
 
-## Population size G6
-```{r }
-
-############ 
-###### Analysis
-############ 
-#Analysis
-# mod0 <- lme4::glmer(Nb_adults ~ Genetic_Diversity + Block + (1|Population),  
-#       data = data[data$Generation_Eggs==6,], family = "poisson")
-
-
-mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
-             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
-
-mod1 <- lm(log(Nb_adults) ~ Block , 
-             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
-
-anova(mod0, mod1) # Effect of genetic diversity 
-
-mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
-             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
-
-
-summary(mod0)
-
-
-############ 
-###### Posthoc
-############ 
-emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-``` 
-
-
 
 ## Population size over time
+### Prelim: test function
 ```{r }
 
 
@@ -1073,34 +1113,40 @@ emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 #If we dont consider Gen=1 
 PLOT_Pop_size_average
-fit <- lm(log(Nb_adults+1) ~ Generation_Eggs, data = data[data$Generation_Eggs>=2,])
+fit <- lm(log(Nb_adults+1) ~ Generation_Eggs, data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 #second degree
-fit2 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,2,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+fit2 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,2,raw=TRUE), 
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 #third degree
-fit3 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,3,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+fit3 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,3,raw=TRUE), 
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 #fourth degree
-fit4 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,4,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+fit4 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,4,raw=TRUE), 
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 #fourth degree
-fit5 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,5,raw=TRUE), data = data[data$Generation_Eggs>=2,])
+fit5 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,5,raw=TRUE), 
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 #exp
-fit6 <- lm(log(Nb_adults+1)~exp(Generation_Eggs), data = data[data$Generation_Eggs>=2,])
+fit6 <- lm(log(Nb_adults+1)~exp(Generation_Eggs), 
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 #log
-fit7 <- lm(log(Nb_adults+1)~log(Generation_Eggs), data = data[data$Generation_Eggs>=2,])
+fit7 <- lm(log(Nb_adults+1)~log(Generation_Eggs), 
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
 
 fit <- glm(Nb_adults ~ Generation_Eggs, 
-           data = data[data$Generation_Eggs>=2,], family = "poisson")
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 fit2 <- glm(Nb_adults~stats::poly(Generation_Eggs,2,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 fit3 <- glm(Nb_adults~stats::poly(Generation_Eggs,3,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 fit4 <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 fit5 <- glm(Nb_adults~stats::poly(Generation_Eggs,5,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 fit6 <- glm(Nb_adults~exp(Generation_Eggs), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 fit7 <- glm(Nb_adults~log(Generation_Eggs), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 
 
 
@@ -1140,29 +1186,33 @@ rsq::rsq(fit7,adj=TRUE)
 
 # Best model is fit 2
 
-
-data$gen_square <- data$Generation_Eggs^2
+#data$gen_square <- data$Generation_Eggs^2
 fit2 <- glm(Nb_adults~stats::poly(Generation_Eggs,2,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 fit2 <- glm(Nb_adults~Generation_Eggs + gen_square, 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 
 # fit2 <- lm(log(Nb_adults+1)~poly(Generation_Eggs,2,raw=TRUE), data = data[data$Generation_Eggs>=2,])
 # fit2 <- lm(log(Nb_adults+1)~ Generation_Eggs + gen_square, data = data[data$Generation_Eggs>=2,])
 #Add the interaction with Genetic diversity
 fit2 <- glm(Nb_adults~ Generation_Eggs*Genetic_Diversity +
              gen_square*Genetic_Diversity,
-           data = data, family = "poisson")
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 
 
 summary(fit2)
 
-####### Add genetic diversity 
+####### Next step: Final step: add genetic diversity 
 
+``` 
+
+
+### ANALYSIS
+```{r }
 #Test oversdispersion
 mod0 <- glm(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
               Block , 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 sqrt(deviance(mod0)/(nobs(mod0)-length(coef(mod0))))
 sigma(mod0)
 # ccl: overdispersion
@@ -1170,7 +1220,7 @@ sigma(mod0)
 
 mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
                 Block  + (1|obs), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 blmeco::dispersion_glmer(mod1)
 sigma(mod1)
 
@@ -1179,13 +1229,13 @@ max(abs(with(mod1@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
 
 
 
-# Test effect
+########## LRT and Final model: 
 mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
                 Block  + (1|obs), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + Genetic_Diversity + 
                 Block  + (1|obs), 
-            data = data[data$Generation_Eggs>=2,], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 anova(mod1, mod2, test ="Chisq")  
 
 
@@ -1201,7 +1251,7 @@ filldata$Estimates <- predict(mod1, newdata=filldata, type = "response", re.form
 
 
 #Plot
-PLOT_Pop_size <- ggplot2::ggplot(data = data[data$Generation_Eggs>=2,]) + 
+PLOT_Pop_size <- ggplot2::ggplot(data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]) + 
   geom_line(data = filldata, aes(x = Generation_Eggs, 
                                 y = Estimates, 
                                colour = Genetic_Diversity), size = 1.3) +
@@ -1220,11 +1270,18 @@ emmeans::emmeans(mod1, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 
 
+``` 
+
+
+### Extra: with gen1
+```{r }
+
 
 ###################################################################
 ###################################################################
 ###################################################################
-####################  INCLUDING GEN 1 ###########################
+###################################################################
+####################  EXTRA: INCLUDING GEN 1 ###########################
 PLOT_Pop_size_average
 fit <- glm(Nb_adults ~ Generation_Eggs, data = data, family = "poisson")
 #second degree
@@ -1274,7 +1331,6 @@ rsq::rsq(fit7,adj=TRUE)
 
 #
 fit4 <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE), data = data, family = "poisson")
-
 
 
 ####################### 
@@ -1383,14 +1439,47 @@ summary(mod)
 
 emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
 
-
-#Signifcant interaction 
 ``` 
 
 
-## Variance over time (residuals)
+### Extra: Pop. size G6
 ```{r }
-data$gen_square <- data$Generation_Eggs^2
+
+############ 
+###### Analysis
+############ 
+#Analysis
+# mod0 <- lme4::glmer(Nb_adults ~ Genetic_Diversity + Block + (1|Population),  
+#       data = data[data$Generation_Eggs==6,], family = "poisson")
+
+
+mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
+             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
+
+mod1 <- lm(log(Nb_adults) ~ Block , 
+             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
+
+anova(mod0, mod1) # Effect of genetic diversity 
+
+mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
+             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
+
+
+summary(mod0)
+
+
+############ 
+###### Posthoc
+############ 
+emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+``` 
+
+
+## Variance over time 
+### Residuals residuals
+```{r }
+#data$gen_square <- data$Generation_Eggs^2
 data_G2_all <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 data_G2_all <- data_G2_all[complete.cases(data_G2_all$Nb_adults), ]
 
@@ -1500,10 +1589,10 @@ car::leveneTest(resid ~ interaction(Generation_Eggs, Genetic_Diversity), data = 
 
 ```           
             
-## Variance over time (raw data)
+### Raw data
 ```{r }
 
-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",], 
+var_raw_data <- ggplot2::ggplot(data[data$Extinction_finalstatus=="no",], 
                 aes(x = factor(Generation_Eggs),  
                                  y = Nb_adults, 
                                  colour = Genetic_Diversity)) + 
@@ -1517,6 +1606,13 @@ ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
   xlab("Generation") +
   geom_text(x=4, y=450, label="**", size = 5, color = "Black") +
   theme_LO
+var_raw_data
+# 
+# 
+# cowplot::save_plot(file = here::here("figures","Variance_rawdata.pdf"),
+#                    var_raw_data, base_height = 10/cm(1),           
+#                    base_width = 15/cm(1), dpi = 610)
+
 
 
 
@@ -1548,8 +1644,23 @@ car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity),
 
 
 car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==4&data$Genetic_Diversity!="Medium",])
+                data = data[data$Extinction_finalstatus=="no"&
+                              data$Generation_Eggs==4&data$Genetic_Diversity!="Medium",])
 
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&
+                              data$Generation_Eggs==4&data$Genetic_Diversity!="Low",])
+
+car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
+                data = data[data$Extinction_finalstatus=="no"&
+                              data$Generation_Eggs==4&data$Genetic_Diversity!="High",])
+
+tapply(data[data$Extinction_finalstatus=="no"&
+              data$Generation_Eggs==4,]$Nb_adults, 
+       data[data$Extinction_finalstatus=="no"&
+              data$Generation_Eggs==4,]$Genetic_Diversity, 
+       var, 
+       na.rm=TRUE)
 ```           
             
 ## Growth rate G6
@@ -1565,7 +1676,6 @@ head(data_phenotyping)
 #############################################################
 ################## Determine distribution ###################
 #############################################################
-
 ## Poisson lognormal model
 mlog <- lme4::lmer(log(Lambda+1) ~ Genetic_Diversity + Block + (1|Population), 
                    data=data_phenotyping)
@@ -1636,12 +1746,14 @@ AIC(mlog, msqrt, mnorm)
 
 
 
+
 #############################################################
 ##################        Analysis        ###################
 #############################################################
 
 mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
                    data=data_phenotyping)
+
 summary(mod0)
 
 mod1 <- lme4::lmer(Lambda ~ Block + (1|Population), 
@@ -1664,6 +1776,15 @@ data_predict_extinct$predict <- predict(mod0,
                                         type = "response",
                                         re.form = NA,
                                         newdata = data_predict_extinct)
+
+
+
+SUM_GrowthRate <- Rmisc::summarySE(data_phenotyping, 
+                        measurevar = c("Lambda"),
+                       groupvars = c("Genetic_Diversity","Week"), 
+                       na.rm = TRUE)
+
+
 
 ```
 
@@ -1856,5 +1977,328 @@ emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 
 ``` 
+
+
+
+
+
+## Proportion life stage
+```{r }
+##### P_adults 
+mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+rm(mod0,mod1)
+
+
+mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+rm(mod0,mod1)
+
+
+##### P_adults 
+mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+rm(mod0,mod1)
+
+mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+rm(mod0,mod1)
+
+##### P_larvae 
+mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference and convergence issue
+
+
+mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference and convergence issue
+
+
+
+
+
+
+``` 
+
+
+
+
+
+# SUMMARY ALL ANALYSIS 
+```{r }
+######### Proba of extinction 
+mod0 <- glm(y ~ Genetic_Diversity + Block,  
+      data = data_proba_extinction, family = binomial)
+mod1 <- glm(y ~ Block ,  
+      data = data_proba_extinction, family = binomial)
+anova(mod1, mod0, test = "Chisq")
+emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+
+#########Time of extinction
+mod1 <- glm(Generation_Eggs ~ Genetic_Diversity + Block,
+                    data = data_timeextinction, family = "poisson")
+mod0 <- glm(Generation_Eggs ~  Block,
+                    data = data_timeextinction, family = "poisson")
+anova(mod0, mod1, test = "Chisq")
+
+
+#########Dynamic over time 
+# Test effect
+mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+                Block  + (1|obs), 
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
+mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + Genetic_Diversity + 
+                Block  + (1|obs), 
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
+anova(mod1, mod2, test ="Chisq")  
+
+emmeans::emmeans(mod1, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+
+#########Growth rate 
+mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
+                   data=data_phenotyping)
+mod1 <- lme4::lmer(Lambda ~ Block + (1|Population), 
+                   data=data_phenotyping)
+anova(mod0,mod1,test="Chisq") # difference
+emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+
+
+#########Growth rate vs. He
+mod3 <- lme4::lmer(Lambda ~ log(He_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+anova(mod3,mod4,test="Chisq") # difference
+
+
+
+##### P_adults 
+mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+##### P_adults 
+mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+##### P_larvae 
+mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+
+
+``` 
+
+
+
+
+
+# All analysis with He start or He
+```{r }
+######### Proba of extinction 
+#Prepare clean dataset
+data_temp <- data[data$Generation_Eggs==6,c("Block","Population","He_start","Extinction_finalstatus")]
+data_temp$Extinction_finalstatus <- as.factor(data_temp$Extinction_finalstatus)
+data_temp$y <- ifelse(data_temp$Extinction_finalstatus == "yes", 1, 0)
+
+
+mod0 <- glm(y ~ He_start + Block,  data = data_temp, family = binomial)
+mod1 <- glm(y ~ Block ,   data = data_temp, family = binomial)
+anova(mod1, mod0, test = "Chisq")
+summary(mod0)
+
+
+
+
+#########Time of extinction
+mod1 <- glm(Generation_Eggs ~ He_start + Block,
+                    data = data_timeextinction, family = "poisson")
+mod0 <- glm(Generation_Eggs ~  Block,
+                    data = data_timeextinction, family = "poisson")
+anova(mod0, mod1, test = "Chisq")
+summary(mod1)
+
+
+
+#########Dynamic over time 
+# Test effect
+mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*He_start + gen_square*He_start + 
+                Block  + (1|obs), 
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
+mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + He_start + 
+                Block  + (1|obs), 
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
+
+
+#Do not converge
+#anova(mod1, mod2, test ="Chisq")  
+
+
+#########Growth rate 
+mod0 <- lme4::lmer(Lambda ~ He_end + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+mod1 <- lme4::lmer(Lambda ~ Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+anova(mod0,mod1,test="Chisq") # difference
+
+
+#########Growth rate vs. He
+mod3 <- lme4::lmer(Lambda ~ log(He_end) + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+anova(mod3,mod4,test="Chisq") # difference
+
+
+
+
+
+##### P_adults 
+mod0 <- lme4::glmer(p_adults ~ He_end + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+mod0 <- lme4::glmer(p_adults ~ He_end + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+##### P_adults 
+mod0 <- lme4::glmer(p_pupae ~ He_end + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+mod0 <- lme4::glmer(p_pupae ~ He_end + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+##### P_larvae 
+mod0 <- lme4::glmer(p_larvae ~ He_end + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+mod0 <- lme4::glmer(p_larvae ~ He_end + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"),
+                   weights = Nb_ttx)
+mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+                   data = data_phenotyping,family = binomial(link = "logit"), 
+                    weights = Nb_ttx)
+anova(mod0,mod1,test="Chisq") # NO difference
+
+
+
+
+
+
+``` 
+
+
+
+
+
+
+
+
 
 
