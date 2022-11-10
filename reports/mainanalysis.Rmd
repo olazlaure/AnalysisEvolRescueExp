@@ -853,6 +853,11 @@ mod0 <- glm(y ~ Genetic_Diversity + Block,
 summary(mod0)
 
 
+
+#Test convergence 
+merMod::check_convergence(mod0)
+library("merMod")
+
 #Test genetic diversity effect
 mod1 <- glm(y ~ Block ,  
       data = data_proba_extinction, family = binomial)
@@ -1197,7 +1202,8 @@ fit2 <- glm(Nb_adults~Generation_Eggs + gen_square,
 #Add the interaction with Genetic diversity
 fit2 <- glm(Nb_adults~ Generation_Eggs*Genetic_Diversity +
              gen_square*Genetic_Diversity,
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
+           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
+           family = "poisson")
 
 
 summary(fit2)
@@ -1210,17 +1216,20 @@ summary(fit2)
 ### ANALYSIS
 ```{r }
 #Test oversdispersion
-mod0 <- glm(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+mod0 <- glm(Nb_adults~Generation_Eggs*Genetic_Diversity + 
+              gen_square*Genetic_Diversity + 
               Block , 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
+            family = "poisson")
 sqrt(deviance(mod0)/(nobs(mod0)-length(coef(mod0))))
 sigma(mod0)
 # ccl: overdispersion
 
 
 mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
+                Block  + (1|obs) , 
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
+            family = "poisson")
 blmeco::dispersion_glmer(mod1)
 sigma(mod1)
 
@@ -1229,12 +1238,27 @@ max(abs(with(mod1@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
 
 
 
+mod1
+
+#Test add Population random
+mod0 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
+                Block  + (1|obs) + (1|Population), 
+            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
+            family = "poisson")
+
+max(abs(with(mod0@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
+max(abs(with(mod1@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
+anova(mod0, mod1, test ="Chisq")  
+
+
+
+
 ########## LRT and Final model: 
 mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs), 
+                Block  + (1|obs)  + (1|Population), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + Genetic_Diversity + 
-                Block  + (1|obs), 
+                Block  + (1|obs)  + (1|Population), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 anova(mod1, mod2, test ="Chisq")  
 
@@ -1474,6 +1498,109 @@ summary(mod0)
 emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
 
 ``` 
+
+### GAMMM Model
+```{r }
+# https://jacolienvanrij.com/Tutorials/GAMM.html
+# install.packages("itsadug")
+library(itsadug)
+packageVersion('mgcv')
+packageVersion('itsadug')
+
+data_dyn <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
+str(data_dyn)
+
+# 1-dimensional smooth of Time:
+m1 <- gam(Nb_adults ~ s(Generation_Eggs), data=data_dyn)
+
+#Meaning the GAM has failed to construct a sensible smooth term for this data. You can limit the maximum df of the smooth using the k parameter:
+m1 <- gam(Nb_adults ~ s(Generation_Eggs, k=3), data=data_dyn)
+
+#number of ‘knots’. This parameter determines the upper bound of the number of underlying base functions being used to build up the curve. Thus, this parameter constraints the wigglyness of a smooth, or - as a metaphor - the number of bowpoints of a curve.
+#Note that the model will base the number of base functions (reflected in the edf of the summary) on the data with the setting for k as upper bound. By default, the value of k for s() is around 9, and for te() and ti() 5 per dimension. Importantly, the value of k should be at most one less than the number of unique data points, otherwise it will fit the density of that predictor.
+
+# interaction with non-isotropicterms:
+#m2 <- gam(Nb_adults ~ te(Generation_Eggs, Genetic_Diversity), data=data_dyn)
+
+# decompose the same interaction in main effects + interaction:
+# (note: include main effects)
+# m3 <- gam(Nb_adults ~ s(Generation_Eggs) + s(Genetic_Diversity) +
+#           + ti(Generation_Eggs, Genetic_Diversity), 
+#           data=data_dyn)
+
+# s() : for modeling a 1-dimensional smooth, or for modeling isotropic interactions (variables are measured in same units and on same scale)
+# te(): for modeling 2- or n-dimensional interaction surfaces of variables that are not isotropic (but see info about d parameter below). Includes ‘main’ effects.
+# ti(): for modeling 2- or n-dimensional interaction surfaces that do not include the ‘main effects
+
+########### 
+########### ADD FACTOR EFFECT: 
+########### 
+
+# How to set up the interaction depends on the type of grouping predictor:
+# with factor include intercept difference: Group + s(Time, by=Group).
+# with ordered factor include intercept difference and reference smooth: Group + s(Time) + s(Time, by=Group).
+# with binary predictor include reference smooth: s(Time) + s(Time, by=IsGroupChildren).
+
+m.factor <- gam(Nb_adults ~ Genetic_Diversity +  s(Generation_Eggs, k=3) + 
+            s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+summary(m.factor)
+
+#The smooth terms summary shows three smooths that are significantly different from 0. 
+#We cannot conclude from the summary that the two curves are different from each other.
+
+
+m.factor <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
+            s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+summary(m.factor)
+
+########### 
+########### ADD RANDOM EFFECT: 
+########### 
+
+# random intercepts adjust the height of other modelterms with a constant value: s(Subject, bs="re").
+# random slopes adjust the slope ofthe trend of a numeric predictor: s(Subject, Time, bs="re").
+# random smooths adjust the trend of a numeric predictor in a nonlinear way: s(Time, Subject, bs="fs", m=1).
+
+m.mixed <- gam(Nb_adults ~ Genetic_Diversity + Block + s(Generation_Eggs, k=3) + 
+            s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
+             s(Population, bs="re") , data=data_dyn)
+summary(m.mixed)
+
+########### 
+########### ADD PLOT: 
+########### 
+# Plot
+# specify two plot panels:
+par(mfrow=c(1,2), cex=1.1)
+# summed effects without random effects:
+# This is actually: intercept + s(Time):GroupAdults
+plot_smooth(m.mixed, view="Time", cond=list(Group="Adults"), 
+      rm.ranef=TRUE, main="intercept+s(Time):GroupAdults", rug=FALSE)
+
+# Plot summed effects for Subject "a01":
+plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a01"), 
+      main="... + s(Subject)", col='red',
+      ylim=c(-15,20), rug=FALSE)
+# Add Subject "a18":
+plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a18"), 
+      add=TRUE, col='blue')
+
+
+
+ggplot(data_dyn) +
+  aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity)  +
+  geom_point() +
+  theme_classic()
+
+fit2 <- gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+
+library("mgcv")
+mgcv::visreg(fit2, xvar = "Generation_Eggs",
+       by = "Genetic_Diversity", data = data_dyn,
+       method = "REML") 
+
+
+```
 
 
 ## Variance over time 
@@ -2052,6 +2179,89 @@ anova(mod0,mod1,test="Chisq") # NO difference and convergence issue
 ``` 
 
 
+## Multinomial life stage
+```{r }
+
+# library("BART")
+# data(alligator)
+# head(alligator)
+# fit <- multinom(food ~ lake+size+sex, data=alligator, weights=count)
+# summary(fit$fitted.values)
+data_TEMP <- data_phenotyping_all[,c(1:5,11:13,23)]
+data_multinom <- tidyr::gather(data_TEMP,"stage","count",6:8)
+data_multinom$Divsersity <- as.factor(data_multinom$Divsersity )
+head(data_multinom)
+
+
+fit <- multinom(stage ~ Divsersity + Week + 
+                  ID_Rep + Population, data=data_multinom, weights=count)
+summary(fit$fitted.values)
+fit
+
+fit0 <- multinom(stage ~ Divsersity + 
+                   ID_Rep + Population , data=data_multinom, weights=count)
+anova(fit,fit0)
+
+fit1 <- multinom(stage ~ Week + 
+                   ID_Rep + Population, data=data_multinom, weights=count)
+anova(fit,fit1)
+
+
+### New function to test random effect MCLOGIT
+# data_TEMP <- data_phenotyping_all[,c(1:5,17:19,23)]
+# data_multinom <- tidyr::gather(data_TEMP,"stage","prop",6:8)
+# data_multinom$Divsersity <- as.factor(data_multinom$Divsersity )
+# head(data_multinom)
+
+
+
+
+# #With random effect
+# library("mclogit")
+# mclogit::mclogit(cbind(prop,interaction(stage,ID_Rep)) ~ Week*Divsersity, data=data_multinom)
+# 
+# 
+# 
+# 
+# 
+# #install.packages("mixcat")
+# install.packages("mixcat")
+# library(mixcat)
+# attach(dur)
+# 
+# model.po <- npmlt(formula = EEC_multinomial ~ call + duration, 
+#                   formula.npo = ~ 1, 
+#                   random = ~ 1|dyad, 
+#                   k = 2)
+# 
+# model.npo <- npmlt(formula = EEC_multinomial ~ call + duration, 
+#                   formula.npo = ~ 1 + call + duration, 
+#                   random = ~ 1|dyad, 
+#                   k = 2)
+# 
+# summary(model.po)
+# 
+# summary(model.npo)
+# 
+# detach(dur)
+# 
+
+
+
+# 
+# filldata <- data.frame(Divsersity = rep(levels(data_multinom$Divsersity),times=2), 
+#                        Week = rep(levels(data_multinom$Week),each=3),
+#                        Adults = NA, 
+#                        Larvae = NA, 
+#                        Pupae = NA)
+# 
+# 
+# head(data_phenotyping_all)
+
+#https://jacolienvanrij.com/Tutorials/GAMM.html
+
+
+``` 
 
 
 
@@ -2077,10 +2287,10 @@ anova(mod0, mod1, test = "Chisq")
 #########Dynamic over time 
 # Test effect
 mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs), 
+                Block  + (1|obs)  + (1|Population), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + Genetic_Diversity + 
-                Block  + (1|obs), 
+                Block  + (1|obs)  + (1|Population), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 anova(mod1, mod2, test ="Chisq")  
 
@@ -2200,10 +2410,10 @@ summary(mod1)
 #########Dynamic over time 
 # Test effect
 mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*He_start + gen_square*He_start + 
-                Block  + (1|obs), 
+                Block  + (1|obs) + (1|Population), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + He_start + 
-                Block  + (1|obs), 
+                Block  + (1|obs) + (1|Population), 
             data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
 
 
