@@ -1570,20 +1570,20 @@ summary(m.mixed)
 ########### ADD PLOT: 
 ########### 
 # Plot
-# specify two plot panels:
-par(mfrow=c(1,2), cex=1.1)
-# summed effects without random effects:
-# This is actually: intercept + s(Time):GroupAdults
-plot_smooth(m.mixed, view="Time", cond=list(Group="Adults"), 
-      rm.ranef=TRUE, main="intercept+s(Time):GroupAdults", rug=FALSE)
-
-# Plot summed effects for Subject "a01":
-plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a01"), 
-      main="... + s(Subject)", col='red',
-      ylim=c(-15,20), rug=FALSE)
-# Add Subject "a18":
-plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a18"), 
-      add=TRUE, col='blue')
+# # specify two plot panels:
+# par(mfrow=c(1,2), cex=1.1)
+# # summed effects without random effects:
+# # This is actually: intercept + s(Time):GroupAdults
+# plot_smooth(m.mixed, view="Time", cond=list(Group="Adults"), 
+#       rm.ranef=TRUE, main="intercept+s(Time):GroupAdults", rug=FALSE)
+# 
+# # Plot summed effects for Subject "a01":
+# plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a01"), 
+#       main="... + s(Subject)", col='red',
+#       ylim=c(-15,20), rug=FALSE)
+# # Add Subject "a18":
+# plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a18"), 
+#       add=TRUE, col='blue')
 
 
 
@@ -1593,12 +1593,35 @@ ggplot(data_dyn) +
   theme_classic()
 
 fit2 <- gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+fit5 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
+            s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+              s(Population, bs="re"), data=data_dyn)
 
-library("mgcv")
-mgcv::visreg(fit2, xvar = "Generation_Eggs",
-       by = "Genetic_Diversity", data = data_dyn,
+#library("visreg")
+visreg::visreg(fit2, xvar = "Generation_Eggs",
+       by = "Genetic_Diversity",
+       data = data_dyn,
        method = "REML") 
 
+
+########### 
+########### AIC
+########### 
+fit1 <- gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
+fit2 <- gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+fit3 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
+            s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
+              s(Population, bs="re"), data=data_dyn)
+fit4 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=4) + 
+            s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
+              s(Population, bs="re"), data=data_dyn)
+fit5 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
+            s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+              s(Population, bs="re"), data=data_dyn)
+
+AIC(fit2,fit1, fit3, fit4, fit5)
+
+https://www.seascapemodels.org/rstats/2021/03/27/common-GAM-problems.html
 
 ```
 
