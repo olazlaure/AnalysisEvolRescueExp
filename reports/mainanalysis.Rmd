@@ -1500,21 +1500,20 @@ emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ``` 
 
 ### GAMMM Model
+#### Basic model
 ```{r }
 # https://jacolienvanrij.com/Tutorials/GAMM.html
 # install.packages("itsadug")
-library(itsadug)
-packageVersion('mgcv')
-packageVersion('itsadug')
+# packageVersion('mgcv')
+# packageVersion('itsadug')
 
 data_dyn <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 str(data_dyn)
 
 # 1-dimensional smooth of Time:
-m1 <- gam(Nb_adults ~ s(Generation_Eggs), data=data_dyn)
-
+#m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs), data=data_dyn)
 #Meaning the GAM has failed to construct a sensible smooth term for this data. You can limit the maximum df of the smooth using the k parameter:
-m1 <- gam(Nb_adults ~ s(Generation_Eggs, k=3), data=data_dyn)
+m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, k=3), data=data_dyn)
 
 #number of ‘knots’. This parameter determines the upper bound of the number of underlying base functions being used to build up the curve. Thus, this parameter constraints the wigglyness of a smooth, or - as a metaphor - the number of bowpoints of a curve.
 #Note that the model will base the number of base functions (reflected in the edf of the summary) on the data with the setting for k as upper bound. By default, the value of k for s() is around 9, and for te() and ti() 5 per dimension. Importantly, the value of k should be at most one less than the number of unique data points, otherwise it will fit the density of that predictor.
@@ -1541,7 +1540,7 @@ m1 <- gam(Nb_adults ~ s(Generation_Eggs, k=3), data=data_dyn)
 # with ordered factor include intercept difference and reference smooth: Group + s(Time) + s(Time, by=Group).
 # with binary predictor include reference smooth: s(Time) + s(Time, by=IsGroupChildren).
 
-m.factor <- gam(Nb_adults ~ Genetic_Diversity +  s(Generation_Eggs, k=3) + 
+m.factor <- mgcv::gam(Nb_adults ~ Genetic_Diversity +  s(Generation_Eggs, k=3) + 
             s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
 summary(m.factor)
 
@@ -1549,7 +1548,7 @@ summary(m.factor)
 #We cannot conclude from the summary that the two curves are different from each other.
 
 
-m.factor <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
+m.factor <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
             s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
 summary(m.factor)
 
@@ -1561,10 +1560,211 @@ summary(m.factor)
 # random slopes adjust the slope ofthe trend of a numeric predictor: s(Subject, Time, bs="re").
 # random smooths adjust the trend of a numeric predictor in a nonlinear way: s(Time, Subject, bs="fs", m=1).
 
-m.mixed <- gam(Nb_adults ~ Genetic_Diversity + Block + s(Generation_Eggs, k=3) + 
+m.mixed <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + s(Generation_Eggs, k=3) + 
             s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
              s(Population, bs="re") , data=data_dyn)
 summary(m.mixed)
+
+
+
+
+```
+
+
+#### Model selection
+```{r }
+########### 
+########### AIC
+########### 
+m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+m2 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=4), data=data_dyn)
+m3 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
+m4 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+m5 <- mgcv::gam(Nb_adults ~ Block+ 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=4), data=data_dyn)
+m6 <- mgcv::gam(Nb_adults ~ Block +  s(Generation_Eggs, k=3) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
+m7 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
+m8 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
+                   s(Population, bs="re"), data=data_dyn)
+m9 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
+                   s(Population, bs="re"), data=data_dyn)
+m10 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=5)+
+                  s(Population, bs="re"),data=data_dyn)
+m11 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=3)+
+                    s(Population, bs="re"), data=data_dyn)
+m12 <- mgcv::gam(Nb_adults ~ Block +  
+                  s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
+                    s(Population, bs="re"), data=data_dyn)
+m13 <- mgcv::gam(Nb_adults ~ Block +  s(Generation_Eggs, k=3) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+m14 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+m15 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+m16 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=4) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
+                    s(Population, bs="re"), data=data_dyn)
+m17 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
+                    s(Population, bs="re"), data=data_dyn)
+
+AIC(m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17)
+
+
+
+#https://www.seascapemodels.org/rstats/2021/03/27/common-GAM-problems.html
+
+
+
+
+# Real comparison 
+mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod1 <- mgcv::gam(Nb_adults ~ Block +  s(Generation_Eggs, k=5) + 
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod3 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  
+                    s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod4 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  
+                    s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod5 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  
+                    s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod7 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=3) +
+                    s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod8 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=4) +
+                    s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod9 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+
+AIC(mod1, mod2, mod3, mod4, mod5, mod7, mod8, mod9)
+
+
+
+
+mod2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+mod9 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+
+
+AIC(mod2, mod8, mod9)
+
+visreg::visreg(mod9, xvar = "Generation_Eggs",
+       by = "Genetic_Diversity", data = data_dyn,
+       method = "REML")
+visreg::visreg(mod2, xvar = "Generation_Eggs",
+       by = "Genetic_Diversity", data = data_dyn,
+       method = "REML")
+
+
+
+
+
+
+
+```
+
+
+
+#### Testing for significance
+```{r }
+# Three important methods to determine the significance of predictors:
+## -1 Model-comparison procedure (using function compareML).
+## -2 Test statistics of the smooth terms as presented in the summary.
+## -3 Visualization of the smooth terms (e.g., difference plots and difference surfaces) but useful only with significative interaction https://jacolienvanrij.com/Tutorials/GAMM.html 
+
+
+###### 1- Model comparison 
+
+mod_1 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), method="ML", data=data_dyn)
+mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
+                    s(Population, bs="re"), data=data_dyn, method='ML')
+
+itsadug::compareML(mod_1, mod_2)
+AIC(mod_1, mod_2)
+
+
+mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
+                    s(Population, bs="re"), data=data_dyn, method='ML')
+mod_3 <- mgcv::gam(Nb_adults ~ Block  +  s(Generation_Eggs, k=5) +
+                    s(Population, bs="re"), data=data_dyn, method='ML')
+itsadug::compareML(mod_3, mod_2)
+
+
+###### 2- Summary of the model
+# With factors such as Group we cannot use the summary to test differences between groups. However, to investigate differences between groups, we could use difference smooths with ordered factors or binary predictors.
+data_dyn$OFGroup_diversity <- as.factor(data_dyn$Genetic_Diversity)
+# change factor to ordered factor:
+data_dyn$OFGroup_diversity <- as.ordered(data_dyn$OFGroup)
+# change contrast to treatment coding (difference curves)
+contrasts(data_dyn$OFGroup_diversity) <- 'contr.treatment'
+# Inspect contrasts:
+contrasts(data_dyn$OFGroup_diversity)
+
+
+mod_1 <- mgcv::gam(Nb_adults ~ OFGroup_diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by = OFGroup_diversity, k=5) + 
+                    s(Population, bs="re"), method="ML", data=data_dyn)
+
+
+summary(mod_1)
+#We confirm: No interaction significative
+# The summary now provides the significance of the difference terms: Medium and High does not show a significantly different trend over Time (F=0.130, edf=1.21, p=0.69), Low and High does not showa significantly different trend over Time (F=0.226, edf=1.001, p=0.02). 
+
+mod_2 <- mgcv::gam(Nb_adults ~ OFGroup_diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Population, bs="re"), method="ML", data=data_dyn)
+summary(mod_2)
+
+  
+###### 2-  Visualization of the smooth terms
+# seful only with significative interaction 
+# Which is not the case here
+# But see: https://jacolienvanrij.com/Tutorials/GAMM.html
+
+
+```
+
+
+#### Plot
+```{r }
+
+mod9 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn)
+
+
+
+ggplot(data_dyn) +
+  aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity)  +
+  geom_point() +
+  theme_classic()
+
+
+visreg::visreg(mod9, xvar = "Generation_Eggs",
+       by = "Genetic_Diversity", data = data_dyn,
+       method = "REML")
+
+
+
 
 ########### 
 ########### ADD PLOT: 
@@ -1587,41 +1787,11 @@ summary(m.mixed)
 
 
 
-ggplot(data_dyn) +
-  aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity)  +
-  geom_point() +
-  theme_classic()
-
-fit2 <- gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
-fit5 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
-            s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-              s(Population, bs="re"), data=data_dyn)
-
-#library("visreg")
-visreg::visreg(fit2, xvar = "Generation_Eggs",
-       by = "Genetic_Diversity",
-       data = data_dyn,
-       method = "REML") 
 
 
-########### 
-########### AIC
-########### 
-fit1 <- gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
-fit2 <- gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
-fit3 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
-            s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
-              s(Population, bs="re"), data=data_dyn)
-fit4 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=4) + 
-            s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
-              s(Population, bs="re"), data=data_dyn)
-fit5 <- gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
-            s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-              s(Population, bs="re"), data=data_dyn)
 
-AIC(fit2,fit1, fit3, fit4, fit5)
 
-https://www.seascapemodels.org/rstats/2021/03/27/common-GAM-problems.html
+
 
 ```
 

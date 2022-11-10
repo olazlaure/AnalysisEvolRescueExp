@@ -23,6 +23,8 @@ usethis::use_r("theme_LO")
 ## Update DESCRIPTION file
 usethis::use_package("ggplot2")
 usethis::use_package("car")
+usethis::use_package("itsadug")
+usethis::use_package("mgcv")
 
 ## Update NAMESPACE file
 devtools::document()

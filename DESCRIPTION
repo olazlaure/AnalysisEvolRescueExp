@@ -26,4 +26,5 @@ Imports:
     sjstats,
     plyr,
     sjPlot,
-    FactoMineR
+    FactoMineR,
+    mgcv
