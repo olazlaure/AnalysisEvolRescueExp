@@ -1107,7 +1107,8 @@ plot2
 
 
 ## Population size over time
-### Prelim: test function
+### Polynomial analysis 
+#### Prelim: test function
 ```{r }
 
 
@@ -1213,7 +1214,7 @@ summary(fit2)
 ``` 
 
 
-### ANALYSIS
+#### Analysis
 ```{r }
 #Test oversdispersion
 mod0 <- glm(Nb_adults~Generation_Eggs*Genetic_Diversity + 
@@ -1297,7 +1298,7 @@ emmeans::emmeans(mod1, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ``` 
 
 
-### Extra: with gen1
+#### Extra: with gen1
 ```{r }
 
 
@@ -1466,7 +1467,7 @@ emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 ``` 
 
 
-### Extra: Pop. size G6
+#### Extra: Pop. size G6
 ```{r }
 
 ############ 
@@ -1703,12 +1704,17 @@ itsadug::compareML(mod_1, mod_2)
 AIC(mod_1, mod_2)
 
 
+
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
                     s(Population, bs="re"), data=data_dyn, method='ML')
 mod_3 <- mgcv::gam(Nb_adults ~ Block  +  s(Generation_Eggs, k=5) +
                     s(Population, bs="re"), data=data_dyn, method='ML')
 itsadug::compareML(mod_3, mod_2)
 
+
+mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  
+                         s(Generation_Eggs, k=5) +
+                         s(Population, bs="re"), data=data_dyn, method='ML')
 
 ###### 2- Summary of the model
 # With factors such as Group we cannot use the summary to test differences between groups. However, to investigate differences between groups, we could use difference smooths with ordered factors or binary predictors.
@@ -1747,52 +1753,73 @@ summary(mod_2)
 #### Plot
 ```{r }
 
-mod9 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
-                    s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+
+mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
+                     s(Generation_Eggs, k=5) +  
+                     s(Population, bs="re"), data=data_dyn)
+
+
+# Plot  block effect
+mod_block_P <- tidymv::predict_gam(mod_final, 
+                               exclude_terms = list("s(Population)"), 
+                               values = list(Population = NULL))
+
+ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
+    facet_wrap(~ Block) +
+  geom_smooth_ci(Genetic_Diversity)
 
 
 
-ggplot(data_dyn) +
-  aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity)  +
-  geom_point() +
-  theme_classic()
+# Plot Diversity effect
+mod_A_p <- tidymv::predict_gam(mod_final, 
+                               exclude_terms = list("s(Population)", "Block"), 
+                               values = list(Population = NULL, Block = NULL))
 
+ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
+    geom_smooth_ci(Genetic_Diversity) 
 
-visreg::visreg(mod9, xvar = "Generation_Eggs",
-       by = "Genetic_Diversity", data = data_dyn,
-       method = "REML")
+PLOT_Pop_size_average 
 
-
-
-
-########### 
-########### ADD PLOT: 
-########### 
-# Plot
-# # specify two plot panels:
-# par(mfrow=c(1,2), cex=1.1)
-# # summed effects without random effects:
-# # This is actually: intercept + s(Time):GroupAdults
-# plot_smooth(m.mixed, view="Time", cond=list(Group="Adults"), 
-#       rm.ranef=TRUE, main="intercept+s(Time):GroupAdults", rug=FALSE)
 # 
-# # Plot summed effects for Subject "a01":
-# plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a01"), 
-#       main="... + s(Subject)", col='red',
-#       ylim=c(-15,20), rug=FALSE)
-# # Add Subject "a18":
-# plot_smooth(m.mixed, view="Time", cond=list(Group="Adults", Subject="a18"), 
-#       add=TRUE, col='blue')
+#   geom_point(data, aes(x = factor(Generation_Eggs),
+#                                 y = Nb_adults,
+#                                 group = Population,
+#                                 colour = Genetic_Diversity),
+#              position = position_dodge(0.4), size = 0.8, alpha = 0.7) +
+#   geom_line(data, aes(x = factor(Generation_Eggs),
+#                                 y = Nb_adults,
+#                                 group = Population,
+#                                 colour = Genetic_Diversity),
+#             position = position_dodge(0.4), size = 0.2, alpha = 0.6) +
+# 
 
 
 
 
+ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
+  geom_smooth_ci(Genetic_Diversity, 
+                 size = 2, linetype = 1)  + 
+  ylab("Population size") +
+  xlab("Generation") + 
+ # xlim (1,6) + 
+  geom_point(data = data[data$Extinction_finalstatus=="no",], 
+             aes(x = Generation_Eggs,
+                                y = Nb_adults,
+                                group = Population,
+                                colour = Genetic_Diversity),
+             position = position_dodge(0.15), size = 0.5, alpha = 0.8) + 
+    scale_color_manual(name="Genetic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    #values = c("#685338", "#FEA698", "#7BC7AD")) +
+                    #values = c("#9AD3CA", "#929FD1", "#E7C7D7")) +
+                    #values = c("#227C9D", "#FFCB77", "#FE6D73")) +
+                    values = c("#E7B800", "#00AFBB", "#FC4E07")) +
+ theme_LO 
+  
 
 
-
-
-
+  
 ```
 
 

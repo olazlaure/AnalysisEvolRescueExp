@@ -25,6 +25,8 @@ usethis::use_package("ggplot2")
 usethis::use_package("car")
 usethis::use_package("itsadug")
 usethis::use_package("mgcv")
+usethis::use_package("tidymv")
+
 
 ## Update NAMESPACE file
 devtools::document()
