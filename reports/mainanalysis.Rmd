@@ -302,7 +302,7 @@ data_survival$status <- ifelse(data_survival$Survival=="extinct", 1, 0)
 ## Population size
 ```{r }
 PLOT_Pop_size<-ggplot2::ggplot(data, aes(x = factor(Generation_Eggs), 
-                                y = Nb_adults, 
+                                y = Nb_adults,  
                                 group = Population,
                                 colour = Genetic_Diversity)) + 
   geom_point(position = position_dodge(0.4), size = 0.8, alpha = 0.7) +
@@ -1808,13 +1808,13 @@ ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
                                 group = Population,
                                 colour = Genetic_Diversity),
              position = position_dodge(0.15), size = 0.5, alpha = 0.8) + 
-    scale_color_manual(name="Genetic history",
-                     breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
-                    #values = c("#685338", "#FEA698", "#7BC7AD")) +
-                    #values = c("#9AD3CA", "#929FD1", "#E7C7D7")) +
-                    #values = c("#227C9D", "#FFCB77", "#FE6D73")) +
-                    values = c("#E7B800", "#00AFBB", "#FC4E07")) +
+    # scale_color_manual(name="Genetic history",
+    #                  breaks = c("High", "Medium", "Low"), 
+    #                 labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+    #                 #values = c("#685338", "#FEA698", "#7BC7AD")) +
+    #                 #values = c("#9AD3CA", "#929FD1", "#E7C7D7")) +
+    #                 #values = c("#227C9D", "#FFCB77", "#FE6D73")) +
+    #                 values = c("#E7B800", "#00AFBB", "#FC4E07")) +
  theme_LO 
   
 
