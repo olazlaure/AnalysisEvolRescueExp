@@ -714,11 +714,11 @@ PLOT_Proportion_lifestage <- ggplot2::ggplot(SUM_Prop_POP, aes(x = He_end,
 PLOT_Proportion_lifestage
 
 
- 
- cowplot::save_plot(here::here("figures","Life_stage_proportion_He.pdf"),
-            PLOT_Proportion_lifestage,
-           base_height = 14/cm(1), base_width = 36/cm(1), dpi = 610)
- 
+ # 
+ # cowplot::save_plot(here::here("figures","Life_stage_proportion_He.pdf"),
+ #            PLOT_Proportion_lifestage,
+ #           base_height = 14/cm(1), base_width = 36/cm(1), dpi = 610)
+ # 
 
 # 
 ``` 
@@ -827,12 +827,12 @@ Plot_survival <- ggplot2::ggplot(data_survprob_he, aes(x = He_remain,  y = SurvP
     labs(size="Replicates") + 
     theme_LO 
 
-
-
-cowplot::save_plot(here::here("figures","Survival_function_He.pdf"),
-                   Plot_survival,
-          base_height = 12/cm(1), base_width = 14/cm(1), dpi = 610)
-
+# 
+# 
+# cowplot::save_plot(here::here("figures","Survival_function_He.pdf"),
+#                    Plot_survival,
+#           base_height = 12/cm(1), base_width = 14/cm(1), dpi = 610)
+# 
 
 
 ```
@@ -1032,8 +1032,8 @@ plot_survival <- ggsurvfit::survfit2(Surv(Gen_eggs_extinct, status) ~ Genetic_Di
 plot_survival
 
 
-cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis.pdf"),   
-                   plot_survival, base_height = 10/cm(1),  base_width = 15/cm(1), dpi = 610)
+# cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis.pdf"),   
+#                    plot_survival, base_height = 10/cm(1),  base_width = 15/cm(1), dpi = 610)
 
 
 # COX representation 
@@ -2045,28 +2045,28 @@ fitdistrplus::descdist(data_phenotyping$Lambda, discrete = FALSE)
 #############################################################
 #Test normal
 f1 <- fitdistrplus::fitdist(data_phenotyping$Lambda, "norm")
-g1 <- gofstat(f1)
+g1 <- fitdistrplus::gofstat(f1)
 g1$kstest
 plot(f1)
 f1$aic
 
 #Test log-normal
 f1 <- fitdistrplus::fitdist(data_phenotyping$Lambda+1, "lnorm")
-g1 <- gofstat(f1)
+g1 <- fitdistrplus::gofstat(f1)
 g1$kstest
 plot(f1)
 f1$aic
 
 #Test exp
 f1 <- fitdistrplus::fitdist(data_phenotyping$Lambda, "exp")
-g1 <- gofstat(f1)
+g1 <- fitdistrplus::gofstat(f1)
 g1$kstest
 plot(f1)
 f1$aic
 
 #Test log-normal
 f1 <- fitdistrplus::fitdist(data_phenotyping$Lambda+1, "gamma")
-g1 <- gofstat(f1)
+g1 <- fitdistrplus::gofstat(f1)
 g1$kstest
 plot(f1)
 f1$aic
