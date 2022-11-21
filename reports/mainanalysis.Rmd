@@ -2491,49 +2491,80 @@ anova(fit,fit1)
 # head(data_multinom)
 
 
+#Other example
+library("AER")
+library("mlogit")
 
 
-# #With random effect
-# library("mclogit")
-# mclogit::mclogit(cbind(prop,interaction(stage,ID_Rep)) ~ Week*Divsersity, data=data_multinom)
-# 
-# 
-# 
-# 
-# 
-# #install.packages("mixcat")
-# install.packages("mixcat")
-# library(mixcat)
-# attach(dur)
-# 
-# model.po <- npmlt(formula = EEC_multinomial ~ call + duration, 
-#                   formula.npo = ~ 1, 
-#                   random = ~ 1|dyad, 
-#                   k = 2)
-# 
-# model.npo <- npmlt(formula = EEC_multinomial ~ call + duration, 
-#                   formula.npo = ~ 1 + call + duration, 
-#                   random = ~ 1|dyad, 
-#                   k = 2)
-# 
-# summary(model.po)
-# 
-# summary(model.npo)
-# 
-# detach(dur)
-# 
+#### 1- Dataset 1: Train transport
+data("TravelMode", package="AER")
+head(TravelMode)
+#Here: Each individual can choose across 4 modes of transports: air train bus or car
+  #We can determine if this choice is random 
+    #or determined by different variables as: vcost, travel, etc. 
+
+TM <- mlogit::mlogit.data(data = TravelMode,   #dataset
+                          choice = "choice",   #Variable containing the choice: yes or no
+                          shape = "long",      #type of  dataset
+                          alt.levels = "mode") #Variable contianing the list of choice 
+
+fit0 <- mlogit::mlogit.data(data=data_multinom, 
+                            choice = "count", 
+                            alt.levels = "stage", 
+                            shape = "long")
+
+nb_box <- 14
+nb_stage <- 3 
+nb_time <- 2
+
+ID_box <- as.factor(rep(rep(c(1:nb_box), nb_stage), nb_time))
+pop <- as.factor(rep(rep(c("lowA","lowB","lowC","lowC",
+         "medA","medA","medB","medC",
+         "highA","highA","highB","highB","highC","highC"), nb_stage), nb_time))
+diversity <- as.factor(rep(rep(c(rep("low",4),rep("med",4), rep("high",6)), nb_stage), nb_time))
+stage <- as.factor(rep(rep(c("larvae","pupae","adult"),  each=nb_box), nb_time))
+timestep <- as.factor(rep(c("t1","t2"), each=nb_box*nb_stage))
+count <- c(rpois(nb_box, lambda=10), 
+           rpois(nb_box, lambda=10),
+           rpois(nb_box, lambda=1),
+           rpois(nb_box, lambda=3), 
+           rpois(nb_box, lambda=2),
+           rpois(nb_box, lambda=20))
+data <- data.frame(ID_box,pop,diversity,stage,timestep,count)
+head(data)
+str(data)
 
 
 
-# 
-# filldata <- data.frame(Divsersity = rep(levels(data_multinom$Divsersity),times=2), 
-#                        Week = rep(levels(data_multinom$Week),each=3),
-#                        Adults = NA, 
-#                        Larvae = NA, 
-#                        Pupae = NA)
-# 
-# 
-# head(data_phenotyping_all)
+data <- data.frame()
+
+
+#### 2- Dataset 2: Fishing price 
+#https://rdrr.io/cran/mlogit/man/mlogit.html
+
+data("Fishing", package = "mlogit")
+head(Fishing)
+#There are: 
+      #two alternative specific variables : price and catch one individual
+      #specific variable (income) 
+      #four fishing mode : beach, pier, boat, charter
+
+#A dataframe containing :
+  #mode: recreation mode choice, one of : beach, pier, boat and charter,
+  #price.beach: price for beach mode
+  #price.pier: price for pier mode,
+  #price.boat: price for private boat mode,
+  #price.charter: price for charter boat mode,
+  #catch.beach: catch rate for beach mode,
+  #catch.pier: catch rate for pier mode,
+  #catch.boat: catch rate for private boat mode,
+  #catch.charter: catch rate for charter boat mode,
+  #income: monthly income,
+
+
+
+
+
 
 
 ``` 
