@@ -860,19 +860,33 @@ data_proba_extinction$y <- ifelse(data_proba_extinction$Extinction_finalstatus =
 mod0 <- glm(y ~ Genetic_Diversity + Block,  
       data = data_proba_extinction, family = binomial)
 
+mod0 <- glm(y ~ Genetic_Diversity-1 + Block,  
+      data = data_proba_extinction, family = binomial)
+
+
+#But issue of convergence 
+plogis(confint(mod0))
+
+
+############ 
+###### Analysis
+############ 
+
 
 summary(mod0)
 
 
 
 #Test convergence 
-
+mod1 <- glm(y ~ Genetic_Diversity + Block ,  
+      data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], 
+      family = binomial)
 
 #Test genetic diversity effect
-mod1 <- glm(y ~ Block ,  
-      data = data_proba_extinction, family = binomial)
+mod0 <- glm(y ~ Block ,  
+      data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], family = binomial)
 anova(mod1, mod0, test = "Chisq")
-#We keep genetic diversity 
+#We remove genetic diversity 
 
 # Perform the lrtest 
 (A <- logLik(mod1))
@@ -886,19 +900,29 @@ lmtest::lrtest(mod1, mod0)
 
 
 
+
+############ 
+###### CONFIDENCE INTERVAL 
+############
 mod0 <- glm(y ~ Genetic_Diversity-1 + Block ,  
-      data = data_proba_extinction, family = binomial)
+      data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], family = binomial)
 summary(mod0)
 
+#Extract probability of extinction 
+#(p_high <- plogis(-21.3144))
+(p_med <- plogis(-3.0142))
+(p_low <- plogis(-2.8082))
 
+
+# Confidence interval
+table_raw <- confint(mod0)
+table_ci <- plogis(table_raw)
+table_ci
 
 ############ 
 ###### Predicted value
 ############ 
-#Extract probability of extinction 
-(p_high <- plogis(-21.3144))
-(p_med <- plogis(-3.0142))
-(p_low <- plogis(-2.8082))
+
 
 data_predict_extinct <- data.frame(Genetic_Diversity = levels(data_proba_extinction$Genetic_Diversity),
                                    Block = "Block4")
@@ -1725,6 +1749,12 @@ mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
                          s(Generation_Eggs, k=5) +
                          s(Population, bs="re"), data=data_dyn, method='ML')
 
+
+mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity-1 + Block  +  
+                         s(Generation_Eggs, k=5) +
+                         s(Population, bs="re"), data=data_dyn, method='ML')
+
+
 ###### 2- Summary of the model
 # With factors such as Group we cannot use the summary to test differences between groups. However, to investigate differences between groups, we could use difference smooths with ordered factors or binary predictors.
 data_dyn$OFGroup_diversity <- as.factor(data_dyn$Genetic_Diversity)
@@ -2170,8 +2200,19 @@ anova(mod0,mod1,test="Chisq") # difference
 ############ 
 emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
 
+
 ############ 
-###### Predict
+###### CONFIDENCE INTERVAL 
+############
+mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity-1 + Block + (1|Population), 
+                   data=data_phenotyping)
+summary(mod0)
+confint(mod0)
+
+
+
+############ 
+###### PREDICT
 ############
 data_predict_extinct <- data.frame(Genetic_Diversity = levels(data_phenotyping$Genetic_Diversity),
                                    Block = "Block4")
@@ -2280,37 +2321,113 @@ plot(log(x),y)
 ##################        Analysis        ###################
 #############################################################
 
-mod3 <- lme4::lmer(Lambda ~ log(He_end) + Block + (1|Population), 
+mod3 <- lme4::lmer(Lambda ~ He_end + Block + (1|Population), 
                    data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
                    data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 anova(mod3,mod4,test="Chisq") # difference
-summary(mod3)
+
+
+
 
 #############################################################
 ##################        Predict         ###################
 #############################################################
 
+#http://rstudio-pubs-static.s3.amazonaws.com/7024_e3a68a9b35454e74abfe15b621c50502.html
+mod3 <- lme4::lmer(Lambda ~ He_end + Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+SUM_MOD <- summary(mod3)
+
+
+stats::confint(mod3)
+#confint(mod3, method="Wald")
+(estimate_He <- SUM_MOD$coefficients["He_end","Estimate"])
+(IC95_lower <- stats::confint(mod3)["He_end","2.5 %"])
+(IC95_upper <- stats::confint(mod3)["He_end","97.5 %"])
+
+
+
+#PREDICT
 data_predict_lambda <- data.frame(He_end =
-  seq(min(data_phenotyping[!is.na(data_phenotyping$He_end),]$He_end),
-      max(data_phenotyping[!is.na(data_phenotyping$He_end),]$He_end), 
+  seq(min(data_phenotyping[!is.na(data_phenotyping$He_end),]$He_end-0.02),
+      max(data_phenotyping[!is.na(data_phenotyping$He_end),]$He_end+0.02),
       0.01),
                                    Block = "Block4")
 
-data_predict_lambda$lambda_predict <- predict(mod3, 
-                                        type = "response",
+
+
+data_predict_lambda$lambda_predict <- predict(mod3, type = "response",
                                         re.form = NA,
                                         newdata = data_predict_lambda)
- 
-  PLOT_He_expect <- PLOT_He_Final +   geom_line(data = data_predict_lambda, 
-                                aes(x = He_end, y = lambda_predict),
-                                linetype = "longdash", col = "grey40", size = 1.25) 
+
+
+
+
+
+
+#Confidence interval
+bb <- lme4::bootMer(mod3,
+              FUN=function(x)predict(x, 
+                                     newdata = data_predict_lambda,
+                                     re.form=NA),
+              nsim=1000)
+# Take quantiles of predictions from bootstrap replicates.
+# These represent the confidence interval of the mean at any value of Time.
+data_predict_lambda$CI_lower <- apply(bb$t, 2, quantile, 0.025)
+data_predict_lambda$CI_upper <- apply(bb$t, 2, quantile, 0.975)
+
+
+
+# 
+# cbind(data_predict_lambda,predict(mod3, newdata = data_predict_lambda, 
+#                                   interval = "confidence", level = 0.95))
+
+# cbind(data_predict_lambda, predict(mod3, newdata = data_predict_lambda, re.form = NA,
+#                      interval = "confidence", level = 0.95))
+# 
+
+
+### Plot 
+# Remove pseudoreplication: average of each population
+SUM_POP_He_Mean<- Rmisc::summarySE(data_phenotyping,
+                            measurevar = c("Lambda"),
+                            groupvars = c("Genetic_Diversity",
+                                          "He_end",
+                                          "Population"), 
+                            na.rm=TRUE)
+
+  
+PLOT_He_expect <- ggplot2::ggplot(SUM_POP_He_Mean) + 
+  ggplot2::geom_ribbon(data = data_predict_lambda, 
+                       aes(ymin = CI_lower, 
+                           ymax = CI_upper, 
+                           x = He_end), 
+                       fill="grey80", alpha=0.3) + 
+  geom_line(data = data_predict_lambda,
+            aes(x = He_end, y = lambda_predict),
+            col = "grey40", size = 1.5, linetype = 1) + 
+  geom_point(data = SUM_POP_He_Mean, 
+             aes(x = He_end,  y = Lambda,
+                 colour = Genetic_Diversity,
+                 size = N), alpha = 0.8) +
+  ylab("Growth rate") +
+  xlab("Expected heterozygosity") +
+  scale_color_manual(name="Genetic history",
+                     breaks = c("High", "Medium", "Low"), 
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    values = c("#00AFBB","#FC4E07","#E7B800")) +
+  labs(size="Replicates") + 
+  theme_LO
+PLOT_He_expect
+
 
 # 
 # #
 # cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
-# 
+
+
 
 ```
 
@@ -2470,18 +2587,18 @@ data_multinom$Divsersity <- as.factor(data_multinom$Divsersity )
 head(data_multinom)
 
 
-fit <- nnet::multinom(stage ~ Divsersity + Week + 
-                  ID_Rep + Population, data=data_multinom, weights=count)
+fit <- nnet::multinom(stage ~ Block + Divsersity + Week + 
+                  ID_Rep , data=data_multinom, weights=count)
 summary(fit$fitted.values)
 fit
 
-fit0 <- nnet::multinom(stage ~ Divsersity + 
-                   ID_Rep + Population , data=data_multinom, weights=count)
+fit0 <- nnet::multinom(stage ~ Block + Divsersity + 
+                   ID_Rep , data=data_multinom, weights=count)
 anova(fit,fit0)
 
-fit1 <- nnet::multinom(stage ~ Week + 
-                   ID_Rep + Population, data=data_multinom, weights=count)
-anova(fit,fit1)
+
+fit1 <- nnet::multinom(stage ~ Block +  Week + ID_Rep, data=data_multinom, weights=count)
+anova(fit1,fit)
 
 
 ### New function to test random effect MCLOGIT
@@ -2513,30 +2630,9 @@ fit0 <- mlogit::mlogit.data(data=data_multinom,
                             alt.levels = "stage", 
                             shape = "long")
 
-nb_box <- 14
-nb_stage <- 3 
-nb_time <- 2
-
-ID_box <- as.factor(rep(rep(c(1:nb_box), nb_stage), nb_time))
-pop <- as.factor(rep(rep(c("lowA","lowB","lowC","lowC",
-         "medA","medA","medB","medC",
-         "highA","highA","highB","highB","highC","highC"), nb_stage), nb_time))
-diversity <- as.factor(rep(rep(c(rep("low",4),rep("med",4), rep("high",6)), nb_stage), nb_time))
-stage <- as.factor(rep(rep(c("larvae","pupae","adult"),  each=nb_box), nb_time))
-timestep <- as.factor(rep(c("t1","t2"), each=nb_box*nb_stage))
-count <- c(rpois(nb_box, lambda=10), 
-           rpois(nb_box, lambda=10),
-           rpois(nb_box, lambda=1),
-           rpois(nb_box, lambda=3), 
-           rpois(nb_box, lambda=2),
-           rpois(nb_box, lambda=20))
-data <- data.frame(ID_box,pop,diversity,stage,timestep,count)
-head(data)
-str(data)
 
 
 
-data <- data.frame()
 
 
 #### 2- Dataset 2: Fishing price 
@@ -2611,7 +2707,7 @@ emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey")
 
 
 #########Growth rate vs. He
-mod3 <- lme4::lmer(Lambda ~ log(He_end) + Block + (1|Population), 
+mod3 <- lme4::lmer(Lambda ~ He_end + Block + (1|Population), 
                    data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
                    data=data_phenotyping[!is.na(data_phenotyping$He_end),])

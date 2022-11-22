@@ -24,11 +24,13 @@ usethis::use_r("theme_LO")
 usethis::use_package("ggplot2")
 usethis::use_package("car")
 usethis::use_package("itsadug")
+usethis::use_package("gather")
 usethis::use_package("mgcv")
 usethis::use_package("tidymv")
 usethis::use_package("nnet")
 usethis::use_package("fitdistrplus")
 usethis::use_package("survminer")
+usethis::use_package("stats")
 
 
 
