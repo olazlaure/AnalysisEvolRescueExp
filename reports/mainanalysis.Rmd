@@ -885,7 +885,7 @@ mod1 <- glm(y ~ Genetic_Diversity + Block ,
 #Test genetic diversity effect
 mod0 <- glm(y ~ Block ,  
       data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], family = binomial)
-anova(mod1, mod0, test = "Chisq")
+anova(mod0, mod1, test = "Chisq")
 #We remove genetic diversity 
 
 # Perform the lrtest 
@@ -979,6 +979,16 @@ anova(mod0, mod1, test = "Chisq")
 (p.val <- pchisq(teststat, df = 2, lower.tail = FALSE))
 
 lmtest::lrtest(mod0,mod1)
+
+
+mod1 <- glm(Generation_Eggs ~ Genetic_Diversity-1 ,
+                    data = data_timeextinction, family = "poisson")
+summary(mod1)
+datatransformed <- confint(mod1)
+exp(datatransformed)
+
+exp(1.568)
+exp(1.6094)
 
 ``` 
 
