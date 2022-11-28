@@ -2673,6 +2673,18 @@ head(Fishing)
 
 
 
+
+
+
+#### Discussion with Ann Hess 
+## Response is stage
+## Weight or group with number 
+## As Random effect: ID_Box (6 values)
+## As Random effect: Population (one to 6 replicates per population)
+## As fixed effect: diversity x Time 
+
+
+
 ``` 
 
 
