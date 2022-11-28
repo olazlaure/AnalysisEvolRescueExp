@@ -544,7 +544,7 @@ SUM_Prop$Stage <- factor(SUM_Prop$Stage, levels = c("p_adults", "p_pupae", "p_la
 # New facet label names for supp variable
 supp.weeks <- c("4 week", "5 week")
 names(supp.weeks) <- c("4-week", "5-week")
-
+ 
 
 
 PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity, 
