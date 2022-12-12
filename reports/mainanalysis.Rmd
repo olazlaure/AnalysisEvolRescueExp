@@ -856,47 +856,47 @@ data_proba_extinction$y <- ifelse(data_proba_extinction$Extinction_finalstatus =
 ############ 
 ###### Analysis
 ############ 
-#Analysis
-mod0 <- glm(y ~ Genetic_Diversity + Block,  
-      data = data_proba_extinction, family = binomial)
-
-mod0 <- glm(y ~ Genetic_Diversity-1 + Block,  
-      data = data_proba_extinction, family = binomial)
-
-
-#But issue of convergence 
-plogis(confint(mod0))
-
-
-############ 
-###### Analysis
-############ 
+# #Analysis
+# mod0 <- glm(y ~ Genetic_Diversity + Block,  
+#       data = data_proba_extinction, family = binomial)
+# 
+# mod0 <- glm(y ~ Genetic_Diversity-1 + Block,  
+#       data = data_proba_extinction, family = binomial)
+# 
+# 
+# #But issue of convergence 
+# plogis(confint(mod0))
 
 
-summary(mod0)
-
-
-
-#Test convergence 
-mod1 <- glm(y ~ Genetic_Diversity + Block ,  
-      data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], 
-      family = binomial)
-
-#Test genetic diversity effect
-mod0 <- glm(y ~ Block ,  
-      data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], family = binomial)
-anova(mod0, mod1, test = "Chisq")
-#We remove genetic diversity 
-
-# Perform the lrtest 
-(A <- logLik(mod1))
-(B <- logLik(mod0))
-#Since the logLik() function gives more information than the numeric value, use the as.numeric() function to isolate the numeric value
-(teststat <- -2 * (as.numeric(A)-as.numeric(B)))
-#df = 5 - 3 = 2
-(p.val <- pchisq(teststat, df = 2, lower.tail = FALSE))
-
-lmtest::lrtest(mod1, mod0)
+# ############ 
+# ###### Analysis
+# ############ 
+# 
+# 
+# summary(mod0)
+# 
+# 
+# 
+# #Test convergence 
+# mod1 <- glm(y ~ Genetic_Diversity + Block ,  
+#       data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], 
+#       family = binomial)
+# 
+# #Test genetic diversity effect
+# mod0 <- glm(y ~ Block ,  
+#       data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], family = binomial)
+# anova(mod0, mod1, test = "Chisq")
+# #We remove genetic diversity 
+# 
+# # Perform the lrtest 
+# (A <- logLik(mod1))
+# (B <- logLik(mod0))
+# #Since the logLik() function gives more information than the numeric value, use the as.numeric() function to isolate the numeric value
+# (teststat <- -2 * (as.numeric(A)-as.numeric(B)))
+# #df = 5 - 3 = 2
+# (p.val <- pchisq(teststat, df = 2, lower.tail = FALSE))
+# 
+# lmtest::lrtest(mod1, mod0)
 
 
 
@@ -904,47 +904,169 @@ lmtest::lrtest(mod1, mod0)
 ############ 
 ###### CONFIDENCE INTERVAL 
 ############
+# mod0 <- glm(y ~ Genetic_Diversity-1 + Block ,  
+#       data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], family = binomial)
+# summary(mod0)
+# 
+# #Extract probability of extinction 
+# #(p_high <- plogis(-21.3144))
+# (p_med <- plogis(-3.0142))
+# (p_low <- plogis(-2.8082))
+# 
+# 
+# # Confidence interval
+# table_raw <- confint(mod0)
+# table_ci <- plogis(table_raw)
+# table_ci
+# 
+# ############ 
+# ###### Predicted value
+# ############ 
+# 
+# 
+# data_predict_extinct <- data.frame(Genetic_Diversity = levels(data_proba_extinction$Genetic_Diversity),
+#                                    Block = "Block4")
+# 
+# data_predict_extinct$predict <- predict(mod0, type = "response",
+#         re.form = NA,
+#         newdata = data_predict_extinct)
+#         
+# data_predict_extinct
+# p_high
+# p_med
+# p_low
+# 
+# 
+# ############ 
+# ###### Posthoc
+# ############ 
+# emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+# 
+
+
+
+
+
+
+############## 
+######## 1- REAL DATA: issue with high no extinction 
+############## 
+
 mod0 <- glm(y ~ Genetic_Diversity-1 + Block ,  
-      data = data_proba_extinction[data_proba_extinction$Genetic_Diversity!="High",], family = binomial)
+      data = data_proba_extinction, family = binomial)
 summary(mod0)
 
-#Extract probability of extinction 
-#(p_high <- plogis(-21.3144))
+(p_high <- plogis(-21.3144))
 (p_med <- plogis(-3.0142))
 (p_low <- plogis(-2.8082))
 
 
-# Confidence interval
-table_raw <- confint(mod0)
-table_ci <- plogis(table_raw)
-table_ci
-
-############ 
-###### Predicted value
-############ 
-
-
-data_predict_extinct <- data.frame(Genetic_Diversity = levels(data_proba_extinction$Genetic_Diversity),
-                                   Block = "Block4")
-
-data_predict_extinct$predict <- predict(mod0, type = "response",
-        re.form = NA,
-        newdata = data_predict_extinct)
-        
-data_predict_extinct
-p_high
-p_med
-p_low
-
-
-############ 
-###### Posthoc
-############ 
-emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+# Confidence interval: high [0,1]
+plogis(confint(mod0))
+## ISSUE: DOESNT CONVERGE
 
 
 
+mod0 <- glm(y ~ Genetic_Diversity + Block ,  
+      data = data_proba_extinction, family = binomial)
+mod1 <- glm(y ~ Block ,  
+      data = data_proba_extinction, family = binomial)
+anova(mod1,mod0,test="Chisq")
 
+
+
+############## 
+######## 2- Augmented Data: As in Scucz et al. 2017 - Ecology
+############## 
+data_proba_extinction_augmented <- rbind(data_proba_extinction,
+                                         # c("Block3","HighX","High","no",0), 
+                                         # c("Block3","LowX","Low","no",0), 
+                                         # c("Block3","MedX","Medium","no",0), 
+                                         #                                                                                      c("Block3","LowY","Low","yes",1), 
+#                                         c("Block3","MedXY","Medium","yes",1),
+                                         c("Block3","HighY","High","yes",1))
+
+data_proba_extinction_augmented$y <- as.numeric(data_proba_extinction_augmented$y)
+
+mod0 <- glm(y ~ Genetic_Diversity-1 + Block ,  
+      data = data_proba_extinction_augmented, family = binomial)
+summary(mod0)
+
+#Real data
+(p_high <- plogis(-21.3144))
+(p_med <- plogis(-3.0142))
+(p_low <- plogis(-2.8082))
+
+#Augmented data
+(p_high <- plogis(-3.9197))
+(p_med <- plogis(-1.6788))
+(p_low <- plogis(-1.5627))
+
+#Augmented data with only extinction
+(p_high <- plogis(-4.39594))
+(p_med <- plogis(-2.31099))
+(p_low <- plogis(-2.11810))
+
+
+# Confidence interval: high [0,1]
+plogis(confint(mod0))
+
+
+mod0 <- glm(y ~ Genetic_Diversity + Block ,  
+      data = data_proba_extinction_augmented, family = binomial)
+mod1 <- glm(y ~ Block ,  
+      data = data_proba_extinction_augmented, family = binomial)
+anova(mod1,mod0,test="Chisq")
+
+
+############## 
+######## 3- PenaliZed  Logistic Regression data 
+############## 
+
+
+fit<-logistf::logistf(y ~ Genetic_Diversity-1 + Block, 
+                      data=data_proba_extinction)
+summary(fit)
+nobs(fit)
+
+
+# Test genetic diversity effect
+mod0<-logistf::logistf(y ~ Genetic_Diversity + Block, 
+                      data=data_proba_extinction)
+drop1(mod0)
+extractAIC(mod0)
+
+
+
+mod0<-logistf::logistf(y ~ Genetic_Diversity + Block, 
+                      data=data_proba_extinction)
+mod1<-logistf::logistf(y ~ Block, 
+                      data=data_proba_extinction)
+anova(mod1,mod0)
+#Confirmation with LRT
+
+
+
+
+
+### Estimates and CI 
+fit<-logistf::logistf(y ~ Genetic_Diversity-1 + Block, 
+                      data=data_proba_extinction)
+sum_p_extinct <- summary(fit)
+
+# Confidence interval:
+plogis(sum_p_extinct$coefficients)
+plogis(sum_p_extinct$ci.lower)
+plogis(sum_p_extinct$ci.upper)
+
+
+# Probability 
+(p_high <- plogis(-5.5403989))
+(p_med <- plogis(-2.5593086))
+(p_low <- plogis(-2.3929983))
+
+
+ plogis(confint(fit))
 
 ``` 
 
@@ -1814,6 +1936,9 @@ mod_block_P <- tidymv::predict_gam(mod_final,
                                exclude_terms = list("s(Population)"), 
                                values = list(Population = NULL))
 
+
+
+
 ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
     facet_wrap(~ Block) +
     tidymv::geom_smooth_ci(Genetic_Diversity)
@@ -1875,6 +2000,19 @@ plot_GAM_Ucurve
 
   
 
+#To estimate confidence interval at the end of the experiment
+#Default on tidymv::geom_smooth_ci is ci_z = 1.96
+#population size at the end
+data_gam_end <- as.data.frame(mod_A_p[mod_A_p$Generation_Eggs==6,])
+data_gam_end$CIlower <- data_gam_end$fit-(1.96*data_gam_end$se.fit)
+data_gam_end$CIupper <- data_gam_end$fit+(1.96*data_gam_end$se.fit)
+data_gam_end
+
+
+#Confirmation on the plot: 
+# plot_GAM_Ucurve + 
+#   ylim (50,170) + 
+#   xlim (5.9,6.1)
 
 ```
 
@@ -2596,51 +2734,51 @@ data_multinom <- tidyr::gather(data_TEMP,"stage","count",6:8)
 data_multinom$Divsersity <- as.factor(data_multinom$Divsersity )
 head(data_multinom)
 
+# 
+# fit <- nnet::multinom(stage ~ Block + Divsersity + Week + 
+#                   ID_Rep , data=data_multinom, weights=count)
+# summary(fit$fitted.values)
+# fit
+# 
+# fit0 <- nnet::multinom(stage ~ Block + Divsersity + 
+#                    ID_Rep , data=data_multinom, weights=count)
+# anova(fit,fit0)
 
-fit <- nnet::multinom(stage ~ Block + Divsersity + Week + 
-                  ID_Rep , data=data_multinom, weights=count)
-summary(fit$fitted.values)
-fit
-
-fit0 <- nnet::multinom(stage ~ Block + Divsersity + 
-                   ID_Rep , data=data_multinom, weights=count)
-anova(fit,fit0)
-
-
-fit1 <- nnet::multinom(stage ~ Block +  Week + ID_Rep, data=data_multinom, weights=count)
-anova(fit1,fit)
-
-
-### New function to test random effect MCLOGIT
-# data_TEMP <- data_phenotyping_all[,c(1:5,17:19,23)]
-# data_multinom <- tidyr::gather(data_TEMP,"stage","prop",6:8)
-# data_multinom$Divsersity <- as.factor(data_multinom$Divsersity )
-# head(data_multinom)
-
-
-#Other example
-library("AER")
-library("mlogit")
+# 
+# fit1 <- nnet::multinom(stage ~ Block +  Week + ID_Rep, data=data_multinom, weights=count)
+# anova(fit1,fit)
+# 
+# 
+# ### New function to test random effect MCLOGIT
+# # data_TEMP <- data_phenotyping_all[,c(1:5,17:19,23)]
+# # data_multinom <- tidyr::gather(data_TEMP,"stage","prop",6:8)
+# # data_multinom$Divsersity <- as.factor(data_multinom$Divsersity )
+# # head(data_multinom)
+# 
+# 
+# #Other example
+# library("AER")
+# library("mlogit")
 
 
 #### 1- Dataset 1: Train transport
-data("TravelMode", package="AER")
-head(TravelMode)
-#Here: Each individual can choose across 4 modes of transports: air train bus or car
-  #We can determine if this choice is random 
-    #or determined by different variables as: vcost, travel, etc. 
-
-TM <- mlogit::mlogit.data(data = TravelMode,   #dataset
-                          choice = "choice",   #Variable containing the choice: yes or no
-                          shape = "long",      #type of  dataset
-                          alt.levels = "mode") #Variable contianing the list of choice 
-
-fit0 <- mlogit::mlogit.data(data=data_multinom, 
-                            choice = "count", 
-                            alt.levels = "stage", 
-                            shape = "long")
-
-
+# data("TravelMode", package="AER")
+# head(TravelMode)
+# #Here: Each individual can choose across 4 modes of transports: air train bus or car
+#   #We can determine if this choice is random 
+#     #or determined by different variables as: vcost, travel, etc. 
+# 
+# TM <- mlogit::mlogit.data(data = TravelMode,   #dataset
+#                           choice = "choice",   #Variable containing the choice: yes or no
+#                           shape = "long",      #type of  dataset
+#                           alt.levels = "mode") #Variable contianing the list of choice 
+# 
+# fit0 <- mlogit::mlogit.data(data=data_multinom, 
+#                             choice = "count", 
+#                             alt.levels = "stage", 
+#                             shape = "long")
+# 
+# 
 
 
 
@@ -2648,9 +2786,9 @@ fit0 <- mlogit::mlogit.data(data=data_multinom,
 #### 2- Dataset 2: Fishing price 
 #https://rdrr.io/cran/mlogit/man/mlogit.html
 
-data("Fishing", package = "mlogit")
-head(Fishing)
-#There are: 
+# data("Fishing", package = "mlogit")
+# head(Fishing)
+# #There are: 
       #two alternative specific variables : price and catch one individual
       #specific variable (income) 
       #four fishing mode : beach, pier, boat, charter
@@ -2682,7 +2820,28 @@ head(Fishing)
 ## As Random effect: ID_Box (6 values)
 ## As Random effect: Population (one to 6 replicates per population)
 ## As fixed effect: diversity x Time 
+data_multinom$stage <- as.factor(data_multinom$stage)
+data_multinom$stage <- factor(data_multinom$stage, levels = c("Larvae", "Pupae", "Adults"))
 
+ 
+# fit <- nnet::multinom(stage ~ Block + Divsersity + Week + 
+#                   ID_Rep , data=data_multinom, weights=count)
+
+# mod0 <- ordinal::clmm(stage ~ Block + Divsersity * Week + 
+#                         (1|ID_Rep) + (1|Population), 
+#                       data=data_multinom, weights=count)
+mod1 <- ordinal::clmm(stage ~ Block + Divsersity + Week +
+                        (1|ID_Rep) + (1|Population), 
+                      data=data_multinom, weights=count)
+mod2 <- ordinal::clmm(stage ~ Block + Divsersity  + 
+                        (1|ID_Rep) + (1|Population), 
+                      data=data_multinom, weights=count)
+mod3 <- ordinal::clmm(stage ~ Block + Week  +
+                        (1|ID_Rep) + (1|Population), 
+                      data=data_multinom, weights=count)
+#anova(mod1,mod0) #sign
+anova(mod1,mod2) #sign
+anova(mod1,mod3) # non sign
 
 
 ``` 
@@ -2808,14 +2967,17 @@ anova(mod0,mod1,test="Chisq") # NO difference
 #Prepare clean dataset
 data_temp <- data[data$Generation_Eggs==6,c("Block","Population","He_start","Extinction_finalstatus")]
 data_temp$Extinction_finalstatus <- as.factor(data_temp$Extinction_finalstatus)
-data_temp$y <- ifelse(data_temp$Extinction_finalstatus == "yes", 1, 0)
-
-
-mod0 <- glm(y ~ He_start + Block,  data = data_temp, family = binomial)
-mod1 <- glm(y ~ Block ,   data = data_temp, family = binomial)
-anova(mod1, mod0, test = "Chisq")
-summary(mod0)
-
+# #### HERE ADD 
+# data_temp$Extinction_finalstatus <- as.factor(data_temp$Extinction_finalstatus)
+# 
+# data_temp$y <- ifelse(data_temp$Extinction_finalstatus == "yes", 1, 0)
+# 
+# 
+# mod0 <- glm(y ~ He_start + Block,  data = data_temp, family = binomial)
+# mod1 <- glm(y ~ Block ,   data = data_temp, family = binomial)
+# anova(mod1, mod0, test = "Chisq")
+# summary(mod0)
+# 
 
 
 
