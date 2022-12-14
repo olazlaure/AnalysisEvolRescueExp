@@ -588,11 +588,17 @@ SUM_POP_He_Mean<- Rmisc::summarySE(data_phenotyping,
                             na.rm=TRUE)
 
 
+
+
 PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
                                                       y = Lambda, 
-                                                      colour = Genetic_Diversity, 
-                                                      size = N)) + 
-    geom_point(alpha = 0.8) +
+                                                      colour = Genetic_Diversity)) + 
+    geom_point(size = 2, alpha = 0.8) +
+    geom_errorbar(data = SUM_POP_He_Mean, aes(x = He_end, 
+                                ymin = Lambda-se, ymax = Lambda+se,
+                                colour = Genetic_Diversity), 
+             size = 0.6, width=0, alpha = 0.8) + 
+    geom_point(size = 3, alpha = 0.8) +
     ylab("Growth rate") +
     xlab("Expected heterozygosity") +
     scale_color_manual(name="Genetic history",
@@ -1115,7 +1121,7 @@ exp(1.6094)
 ``` 
 
 
-## Survival analysis
+## Supplement: Survival analysis
 ```{r }
 str(data_survival)
 #Note: the Surv() function in the {survival} package accepts by default TRUE/FALSE, where TRUE is event and FALSE is censored; 1/0 where 1 is event and 0 is censored; or 2/1 where 2 is event and 1 is censored. Please take care to ensure the event indicator is properly formatted.
@@ -1272,7 +1278,7 @@ plot2
 
 
 ## Population size over time
-### Polynomial analysis 
+### Old: Polynomial analysis 
 #### Prelim: test function
 ```{r }
 
@@ -2017,7 +2023,7 @@ data_gam_end
 ```
 
 
-## Variance over time 
+## Old: Variance over time 
 ### Residuals residuals
 ```{r }
 #data$gen_square <- data$Generation_Eggs^2
@@ -2555,26 +2561,29 @@ PLOT_He_expect <- ggplot2::ggplot(SUM_POP_He_Mean) +
   geom_line(data = data_predict_lambda,
             aes(x = He_end, y = lambda_predict),
             col = "grey40", size = 1.5, linetype = 1) + 
+      geom_errorbar(data = SUM_POP_He_Mean, aes(x = He_end, 
+                                ymin = Lambda-se, ymax = Lambda+se,
+                                colour = Genetic_Diversity), 
+             size = 0.6, width=0, alpha = 0.6) + 
   geom_point(data = SUM_POP_He_Mean, 
              aes(x = He_end,  y = Lambda,
-                 colour = Genetic_Diversity,
-                 size = N), alpha = 0.8) +
+                 colour = Genetic_Diversity), 
+             size = 3, alpha = 0.9) +
   ylab("Growth rate") +
   xlab("Expected heterozygosity") +
   scale_color_manual(name="Genetic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07","#E7B800")) +
-  labs(size="Replicates") + 
   theme_LO
 PLOT_He_expect
 
 
-# 
-# #
+
+#
 # cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
-
+# 
 
 
 ```
