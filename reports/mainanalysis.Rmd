@@ -401,7 +401,7 @@ PLOT_Pop_size_predict<-ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
   geom_line(data = filldata, aes(x = Generation_Eggs, 
                                 y = Estimates, 
                                colour = Genetic_Diversity), size = 1.4) + 
-  scale_color_manual(name="Genetic history",
+  scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07", "#E7B800")) +
@@ -576,6 +576,9 @@ PLOT_prop
 #           base_height = 10/cm(1), base_width = 18/cm(1), dpi = 610)
 
 
+lm()
+
+
 ``` 
 
 
@@ -604,7 +607,7 @@ PLOT_He_Final <- ggplot2::ggplot(SUM_POP_He_Mean, aes(x = He_end,
     geom_point(size = 3, alpha = 0.8) +
     ylab("Growth rate") +
     xlab("Expected heterozygosity") +
-    scale_color_manual(name="Genetic history",
+    scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07","#E7B800")) +
@@ -714,7 +717,7 @@ PLOT_Proportion_lifestage <- ggplot2::ggplot(SUM_Prop_POP, aes(x = He_end,
     geom_point(alpha = 0.8) +
     ylab("Proportion") +
     xlab("Expected heterozygosity") +
-    scale_color_manual(name="Genetic history",
+    scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07", "#E7B800")) + 
@@ -830,7 +833,7 @@ Plot_survival <- ggplot2::ggplot(data_survprob_he, aes(x = He_remain,  y = SurvP
     geom_point(alpha = 0.8) +
     ylab("Survival probability") +
     xlab("Expected heterozygosity") +
-    scale_color_manual(name="Genetic history",
+    scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07", "#E7B800")) + 
@@ -1988,7 +1991,7 @@ plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
                  size = 1.5, linetype = 1)  + 
   ylab("Population size") +
   xlab("Generation") +
-  scale_color_manual(name="Genetic history",
+  scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"),
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
                    # values = c("#685338", "#FEA698", "#7BC7AD")) +
@@ -2052,7 +2055,7 @@ ggplot2::ggplot(data_G2_all, aes(x = factor(Generation_Eggs),
                                  colour = Genetic_Diversity)) + 
   geom_boxplot(outlier.color = NA) +
   geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
-  scale_color_manual(name="Genetic history",
+  scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#E7B800","#FC4E07")) +
@@ -2152,7 +2155,7 @@ var_raw_data <- ggplot2::ggplot(data[data$Extinction_finalstatus=="no",],
                                  colour = Genetic_Diversity)) + 
   geom_boxplot(outlier.color = NA) +
   geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
-  scale_color_manual(name="Genetic history",
+  scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07", "#E7B800")) +
@@ -2215,6 +2218,153 @@ tapply(data[data$Extinction_finalstatus=="no"&
               data$Generation_Eggs==4,]$Genetic_Diversity, 
        var, 
        na.rm=TRUE)
+
+```           
+            
+### Coefficient of variation 
+```{r }
+########### 
+########### OPTION E: COEFFICIENT OF VARIATION 
+########### 
+SUM_CoefVar <- Rmisc::summarySE(data[data$Extinction_finalstatus=="no"&data$Generation_Eggs>=2,], 
+                        measurevar = c("Nb_adults"),
+                       groupvars = c("Genetic_Diversity","Generation_Eggs"), 
+                       na.rm = TRUE)
+
+SUM_CoefVar
+
+SUM_CoefVar$CoefVar <- (SUM_CoefVar$sd / SUM_CoefVar$Nb_adults) * 100
+SUM_CoefVar
+
+
+
+
+library(DescTools)
+DescTools::CoefVar(data[data$Extinction_finalstatus=="no"&
+                          data$Generation_Eggs==2&
+                          data$Genetic_Diversity=="Low",]$Nb_adults, conf.level = 0.95)
+data_extant <- data[data$Extinction_finalstatus=="no"&
+                          data$Generation_Eggs>=2,]
+
+tapply(data_extant$Nb_adults, 
+       list(data_extant$Generation_Eggs, 
+            data_extant$Genetic_Diversity), 
+       CoefVar, na.rm=TRUE)
+
+
+SUM_CoefVar_DescTools <- SUM_CoefVar[,1:2]
+SUM_CoefVar_DescTools$CoefVar <- NA
+SUM_CoefVar_DescTools$CI_lower <- NA
+SUM_CoefVar_DescTools$CI_upper <- NA 
+
+for (i in levels(SUM_CoefVar_DescTools$Genetic_Diversity)) {
+  for (j in c(2:6)) {
+SUM_CoefVar_DescTools$CoefVar[SUM_CoefVar_DescTools$Genetic_Diversity==i&
+                                 SUM_CoefVar_DescTools$Generation_Eggs==j] <- DescTools::CoefVar(data_extant[data_extant$Genetic_Diversity==i&
+                                 data_extant$Generation_Eggs==j,]$Nb_adults, 
+                                     conf.level = 0.95, na.rm=TRUE)[1]
+SUM_CoefVar_DescTools$CI_lower[SUM_CoefVar_DescTools$Genetic_Diversity==i&
+                                 SUM_CoefVar_DescTools$Generation_Eggs==j] <- DescTools::CoefVar(data_extant[data_extant$Genetic_Diversity==i&
+                                 data_extant$Generation_Eggs==j,]$Nb_adults, 
+                                     conf.level = 0.95, na.rm=TRUE)[2]
+SUM_CoefVar_DescTools$CI_upper[SUM_CoefVar_DescTools$Genetic_Diversity==i&
+                                 SUM_CoefVar_DescTools$Generation_Eggs==j] <- DescTools::CoefVar(data_extant[data_extant$Genetic_Diversity==i&
+                                 data_extant$Generation_Eggs==j,]$Nb_adults, 
+                                     conf.level = 0.95, na.rm=TRUE)[3]
+  }
+}
+  
+
+
+
+### Plot
+ggplot2::ggplot(SUM_CoefVar, 
+                aes(x = Genetic_Diversity,  
+                    y = CoefVar, 
+                    fill = Genetic_Diversity, 
+                    color = Genetic_Diversity, 
+                    shape = factor(Generation_Eggs))) + 
+  #geom_boxplot(outlier.color = NA) +
+  geom_point(size = 4, alpha = 1) +
+  scale_shape_manual(name="Generation", values = c(21,22,23,24,25)) +
+  scale_fill_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"), 
+                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    values = c("#00AFBB","#FC4E07", "#E7B800")) +
+  scale_color_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"), 
+                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    values = c("#00AFBB","#FC4E07", "#E7B800")) +
+  ggplot2::scale_x_discrete(labels = c("Diverse","Intermediate bottleneck","Strong bottleneck")) + 
+  guides(color = FALSE, fill = FALSE) + 
+  ylab("Coefficient of variation (%)") +
+  xlab("Demographic history") +
+  theme_LO + 
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
+  
+
+
+
+### Plot
+plot_CV <- ggplot2::ggplot(SUM_CoefVar, 
+                aes(x = factor(Generation_Eggs),  
+                    y = CoefVar, 
+                    color = Genetic_Diversity)) + 
+  geom_point(size = 4, alpha = 1) +
+  scale_color_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"), 
+                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    values = c("#00AFBB","#FC4E07", "#E7B800")) +
+  ylab("Coefficient of variation (%)") +
+  xlab("Generation") +
+  theme_LO + 
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
+plot_CV
+
+
+
+
+plot_CV_function <- ggplot2::ggplot(SUM_CoefVar_DescTools, 
+                aes(x = factor(Generation_Eggs),  
+                    y = CoefVar, 
+                    color = Genetic_Diversity)) + 
+  geom_point(position = position_dodge(0.4), 
+             size = 4, alpha = 1) +
+  geom_errorbar(aes(x = factor(Generation_Eggs),
+                    ymin = CI_lower,
+                    ymax = CI_upper,
+                    colour = Genetic_Diversity),
+             position = position_dodge(0.4), size = 0.6, width=0, alpha = 0.8) +
+  scale_color_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"), 
+                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    values = c("#00AFBB","#FC4E07", "#E7B800")) +
+  ylab("Coefficient of variation") +
+  xlab("Generation") +
+  theme_LO + 
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
+plot_CV_function
+
+
+# cowplot::save_plot(here::here("figures","CoefficientVariation_time.pdf"),   plot_CV_function,
+#           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
+# 
+# 
+
+
+# ## Statistic 
+# mod0 <- lm(CoefVar ~ Genetic_Diversity, data=SUM_CoefVar)
+# mod1 <- lm(CoefVar ~ 1, data=SUM_CoefVar)
+# anova(mod0, mod1, test = "Chisq")
+# 
+# mod0 <- lm(CoefVar ~ Genetic_Diversity-1, data=SUM_CoefVar)
+# summary(mod0)
+# confint(mod0)
+
+
 ```           
             
 ## Growth rate G6
@@ -2578,7 +2728,7 @@ PLOT_He_expect <- ggplot2::ggplot(SUM_POP_He_Mean) +
              size = 3, alpha = 0.9) +
   ylab("Growth rate") +
   xlab("Expected heterozygosity") +
-  scale_color_manual(name="Genetic history",
+  scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07","#E7B800")) +
