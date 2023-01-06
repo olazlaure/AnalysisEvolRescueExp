@@ -555,7 +555,7 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
   facet_wrap(~ Week, ncol=2, 
              labeller = labeller(Week = supp.weeks)) +
   geom_bar(stat="identity") + 
-  xlab("Genetic history") +
+  xlab("Demographic history") +
   labs(color="Stage of individuals") +
   ylab("Proportion of each stage") +
   scale_fill_manual(values= c("#619CFF","#F8766D","#00BA38"), 
@@ -568,7 +568,9 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
   theme_LO + 
   theme(strip.background = element_rect(color="grey30", 
                                         fill="white", size=0.5, linetype="solid"), 
-        strip.text.x = element_text(size = 12, color = "black", face = "bold"))
+        strip.text.x = element_text(size = 12, color = "black", face = "bold"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
 PLOT_prop
 
 # 
@@ -722,7 +724,8 @@ PLOT_Proportion_lifestage <- ggplot2::ggplot(SUM_Prop_POP, aes(x = He_end,
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07", "#E7B800")) + 
     labs(size="Replicates") + 
-    theme_LO 
+    theme_LO + theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
 PLOT_Proportion_lifestage
 
 
@@ -2000,7 +2003,7 @@ plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
                   #  values = c("#9AD3CA", "#929FD1", "#E7C7D7")) +
                    #values = c("#227C9D", "#FFCB77", "#FE6D73")) +
                      values = c("#00AFBB","#FC4E07","#E7B800")) +
- xlim(2,6) +
+ xlim(1.8,6.2) +
  theme_LO  + 
  theme(panel.grid.major.y = element_blank(),
         panel.grid.minor.y = element_blank())
@@ -2009,12 +2012,12 @@ plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
 
 plot_GAM_Ucurve
 
-cowplot::save_plot(file = here::here("figures","PopulationSize_GAM.pdf"),
-                   plot_GAM_Ucurve, base_height = 10/cm(1),
-                   base_width = 13/cm(1), dpi = 610)
-
-
-  
+# cowplot::save_plot(file = here::here("figures","PopulationSize_GAM.pdf"),
+#                    plot_GAM_Ucurve, base_height = 10/cm(1),
+#                    base_width = 13/cm(1), dpi = 610)
+# 
+# 
+#   
 
 #To estimate confidence interval at the end of the experiment
 #Default on tidymv::geom_smooth_ci is ci_z = 1.96
@@ -2240,22 +2243,24 @@ SUM_CoefVar
 
 
 library(DescTools)
-DescTools::CoefVar(data[data$Extinction_finalstatus=="no"&
-                          data$Generation_Eggs==2&
-                          data$Genetic_Diversity=="Low",]$Nb_adults, conf.level = 0.95)
+# DescTools::CoefVar(data[data$Extinction_finalstatus=="no"&
+#                           data$Generation_Eggs==2&
+#                           data$Genetic_Diversity=="Low",]$Nb_adults, conf.level = 0.95)
 data_extant <- data[data$Extinction_finalstatus=="no"&
                           data$Generation_Eggs>=2,]
-
-tapply(data_extant$Nb_adults, 
-       list(data_extant$Generation_Eggs, 
-            data_extant$Genetic_Diversity), 
-       CoefVar, na.rm=TRUE)
+# 
+# tapply(data_extant$Nb_adults, 
+#        list(data_extant$Generation_Eggs, 
+#             data_extant$Genetic_Diversity), 
+#        CoefVar, na.rm=TRUE)
 
 
 SUM_CoefVar_DescTools <- SUM_CoefVar[,1:2]
 SUM_CoefVar_DescTools$CoefVar <- NA
 SUM_CoefVar_DescTools$CI_lower <- NA
 SUM_CoefVar_DescTools$CI_upper <- NA 
+SUM_CoefVar_DescTools$Mean <- NA 
+
 
 for (i in levels(SUM_CoefVar_DescTools$Genetic_Diversity)) {
   for (j in c(2:6)) {
@@ -2271,6 +2276,12 @@ SUM_CoefVar_DescTools$CI_upper[SUM_CoefVar_DescTools$Genetic_Diversity==i&
                                  SUM_CoefVar_DescTools$Generation_Eggs==j] <- DescTools::CoefVar(data_extant[data_extant$Genetic_Diversity==i&
                                  data_extant$Generation_Eggs==j,]$Nb_adults, 
                                      conf.level = 0.95, na.rm=TRUE)[3]
+
+SUM_CoefVar_DescTools$Mean[SUM_CoefVar_DescTools$Genetic_Diversity==i&
+                                 SUM_CoefVar_DescTools$Generation_Eggs==j] <- mean(data_extant[data_extant$Genetic_Diversity==i&
+                   data_extant$Generation_Eggs==j,]$Nb_adults, 
+     na.rm = TRUE)
+
   }
 }
   
@@ -2354,6 +2365,19 @@ plot_CV_function
 # 
 # 
 
+
+plot_testCV <- ggplot2::ggplot(SUM_CoefVar_DescTools, 
+                aes(x = Mean,  
+                    y = CoefVar, 
+                    color = Genetic_Diversity)) + 
+  geom_point(size = 4, alpha = 1) +
+  scale_color_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"), 
+                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+                    values = c("#00AFBB","#FC4E07", "#E7B800")) +
+  theme_LO 
+
+plot_testCV
 
 # ## Statistic 
 # mod0 <- lm(CoefVar ~ Genetic_Diversity, data=SUM_CoefVar)
@@ -2736,8 +2760,8 @@ PLOT_He_expect <- ggplot2::ggplot(SUM_POP_He_Mean) +
 PLOT_He_expect
 
 
-
-#
+# 
+# 
 # cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
 # 
