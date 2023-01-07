@@ -71,6 +71,17 @@ dim(data)
 #Add variable 
 data$gen_square <- data$Generation_Eggs^2
 
+
+
+
+##Color code
+                   # values = c("#685338", "#FEA698", "#7BC7AD")) +
+                   # values = c( "#51392C","#DA5837", "#4C9E97")) +
+                   # values = c( "#00AFBB", "#E7B800", "#FC4E07")) +
+                  #  values = c("#9AD3CA", "#929FD1", "#E7C7D7")) +
+                   #values = c("#227C9D", "#FFCB77", "#FE6D73")) +
+
+
 ``` 
 
 
@@ -1695,7 +1706,7 @@ str(data_dyn)
 # 1-dimensional smooth of Time:
 #m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs), data=data_dyn)
 #Meaning the GAM has failed to construct a sensible smooth term for this data. You can limit the maximum df of the smooth using the k parameter:
-m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, k=3), data=data_dyn)
+m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, k=3), family = "poisson", data=data_dyn)
 
 #number of ‘knots’. This parameter determines the upper bound of the number of underlying base functions being used to build up the curve. Thus, this parameter constraints the wigglyness of a smooth, or - as a metaphor - the number of bowpoints of a curve.
 #Note that the model will base the number of base functions (reflected in the edf of the summary) on the data with the setting for k as upper bound. By default, the value of k for s() is around 9, and for te() and ti() 5 per dimension. Importantly, the value of k should be at most one less than the number of unique data points, otherwise it will fit the density of that predictor.
@@ -1723,7 +1734,8 @@ m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, k=3), data=data_dyn)
 # with binary predictor include reference smooth: s(Time) + s(Time, by=IsGroupChildren).
 
 m.factor <- mgcv::gam(Nb_adults ~ Genetic_Diversity +  s(Generation_Eggs, k=3) + 
-            s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+            s(Generation_Eggs, by= Genetic_Diversity, k=3), family = "poisson", data=data_dyn)
+
 summary(m.factor)
 
 #The smooth terms summary shows three smooths that are significantly different from 0. 
@@ -1731,7 +1743,7 @@ summary(m.factor)
 
 
 m.factor <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
-            s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+            s(Generation_Eggs, by= Genetic_Diversity, k=3),family = "poisson",  data=data_dyn)
 summary(m.factor)
 
 ########### 
@@ -1744,7 +1756,7 @@ summary(m.factor)
 
 m.mixed <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + s(Generation_Eggs, k=3) + 
             s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
-             s(Population, bs="re") , data=data_dyn)
+             s(Population, bs="re") , family = "poisson", data=data_dyn)
 summary(m.mixed)
 
 
@@ -1758,44 +1770,44 @@ summary(m.mixed)
 ########### 
 ########### AIC
 ########### 
-m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
-m2 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=4), data=data_dyn)
-m3 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
+m1 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3), family = "poisson", data=data_dyn)
+m2 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=4), family = "poisson", data=data_dyn)
+m3 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=5), family = "poisson", data=data_dyn)
 m4 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
-                  s(Generation_Eggs, by= Genetic_Diversity, k=3), data=data_dyn)
+                  s(Generation_Eggs, by= Genetic_Diversity, k=3), family = "poisson", data=data_dyn)
 m5 <- mgcv::gam(Nb_adults ~ Block+ 
-                  s(Generation_Eggs, by= Genetic_Diversity, k=4), data=data_dyn)
+                  s(Generation_Eggs, by= Genetic_Diversity, k=4), family = "poisson", data=data_dyn)
 m6 <- mgcv::gam(Nb_adults ~ Block +  s(Generation_Eggs, k=3) + 
-                  s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5), family = "poisson", data=data_dyn)
 m7 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
-                  s(Generation_Eggs, by= Genetic_Diversity, k=5), data=data_dyn)
+                  s(Generation_Eggs, by= Genetic_Diversity, k=5), family = "poisson", data=data_dyn)
 m8 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
-                   s(Population, bs="re"), data=data_dyn)
+                   s(Population, bs="re"), family = "poisson", data=data_dyn)
 m9 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
-                   s(Population, bs="re"), data=data_dyn)
+                   s(Population, bs="re"), family = "poisson", data=data_dyn)
 m10 <- mgcv::gam(Nb_adults ~ s(Generation_Eggs, by= Genetic_Diversity, k=5)+
-                  s(Population, bs="re"),data=data_dyn)
+                  s(Population, bs="re"), family = "poisson", data=data_dyn)
 m11 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=3)+
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 m12 <- mgcv::gam(Nb_adults ~ Block +  
                   s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson",  data=data_dyn)
 m13 <- mgcv::gam(Nb_adults ~ Block +  s(Generation_Eggs, k=3) + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 m14 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 m15 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 m16 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=4) + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 m17 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=3) + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 
 AIC(m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17)
 
@@ -1805,53 +1817,54 @@ AIC(m1,m2,m3,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17)
 
 
 
-
 # Real comparison 
 mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod1 <- mgcv::gam(Nb_adults ~ Block +  s(Generation_Eggs, k=5) + 
                   s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod3 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  
                     s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod4 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  
                     s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod5 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  
                     s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod7 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=3) +
                     s(Generation_Eggs, by= Genetic_Diversity, k=3) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod8 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=4) +
                     s(Generation_Eggs, by= Genetic_Diversity, k=4) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 mod9 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 
 AIC(mod1, mod2, mod3, mod4, mod5, mod7, mod8, mod9)
 
 
 
-
-mod2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
-mod9 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
+modA <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn)
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
+modB <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +  s(Generation_Eggs, k=5) + 
+                    s(Population, bs="re"),family = "poisson",  data=data_dyn)
+modC <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  + 
+                    s(Generation_Eggs, by= Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), family = "poisson", data=data_dyn)
 
 
-AIC(mod2, mod8, mod9)
+AIC(modA, modB, modC)
 
-visreg::visreg(mod9, xvar = "Generation_Eggs",
+visreg::visreg(modA, xvar = "Generation_Eggs",
        by = "Genetic_Diversity", data = data_dyn,
        method = "REML")
-visreg::visreg(mod2, xvar = "Generation_Eggs",
+visreg::visreg(modC, xvar = "Generation_Eggs",
        by = "Genetic_Diversity", data = data_dyn,
        method = "REML")
 
@@ -1863,7 +1876,29 @@ visreg::visreg(mod2, xvar = "Generation_Eggs",
 
 ```
 
+#### Checking  overdisperson 
+```{r }
+mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), method="ML",  family = "poisson", link = log, data=data_dyn)
 
+#Check overdispersion 
+sqrt(deviance(mod0)/(nobs(mod0)-length(coef(mod0))))
+sigma(mod0)
+summary(mod0)
+
+
+# Add random obs effect 
+data_dyn$obs<-as.factor(1:nrow(data_dyn))
+
+
+mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=3) +
+                    #s(Generation_Eggs, by = Genetic_Diversity, k=3) + 
+                    s(Population, bs="re") + s(obs, bs = "re"), 
+                    method="ML",  family = "poisson", link = log, data=data_dyn)
+
+
+```
 
 #### Testing for significance
 ```{r }
@@ -1874,33 +1909,56 @@ visreg::visreg(mod2, xvar = "Generation_Eggs",
 
 
 ###### 1- Model comparison 
-
+### Test interaction Generation*Genetic Diversity
 mod_1 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), method="ML", data=data_dyn)
+                    s(Population, bs="re"), method="ML",  family = "poisson", link = log, data=data_dyn)
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = "poisson", link = log, method='ML')
 
 itsadug::compareML(mod_1, mod_2)
 AIC(mod_1, mod_2)
 
 
+### Test effect Generation
+# mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  
+#                     s(Generation_Eggs, k=5) +
+#                      s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+#                     s(Population, bs="re"), data=data_dyn, family = "poisson", link = log, method='ML')
+# mod_3 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +   
+#                      s(Generation_Eggs, by = Genetic_Diversity, k=5) +
+#                     s(Population, bs="re"), data=data_dyn, family = "poisson",link = log, method='ML')
+# itsadug::compareML(mod_3, mod_2)
+# 
+# 
 
-mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, method='ML')
-mod_3 <- mgcv::gam(Nb_adults ~ Block  +  s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, method='ML')
+
+### Test intercept Genetic Diversity
+mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  
+                    s(Generation_Eggs, k=5) +
+                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), data=data_dyn, family = "poisson", link = log, method='ML')
+mod_3 <- mgcv::gam(Nb_adults ~ Block  +   
+                    s(Generation_Eggs, k=5) +
+                     s(Generation_Eggs, by = Genetic_Diversity, k=5) +
+                    s(Population, bs="re"), data=data_dyn, family = "poisson",link = log, method='ML')
 itsadug::compareML(mod_3, mod_2)
 
 
-mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  
-                         s(Generation_Eggs, k=5) +
-                         s(Population, bs="re"), data=data_dyn, method='ML')
 
 
-mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity-1 + Block  +  
+
+mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
                          s(Generation_Eggs, k=5) +
-                         s(Population, bs="re"), data=data_dyn, method='ML')
+                         s(Generation_Eggs, by = Genetic_Diversity, k=5) +
+                         s(Population, bs="re"), data=data_dyn,  family = "poisson", link = log, method='ML')
+
+
+
+mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity-1 + Block  +
+                         s(Generation_Eggs, k=5) +
+                         s(Generation_Eggs, by = Genetic_Diversity, k=5) +
+                         s(Population, bs="re"), data=data_dyn, family = "poisson",link = log,  method='ML')
 
 
 ###### 2- Summary of the model
@@ -1914,18 +1972,16 @@ contrasts(data_dyn$OFGroup_diversity) <- 'contr.treatment'
 contrasts(data_dyn$OFGroup_diversity)
 
 
-mod_1 <- mgcv::gam(Nb_adults ~ OFGroup_diversity + Block +   s(Generation_Eggs, k=5) +
-                    s(Generation_Eggs, by = OFGroup_diversity, k=5) + 
-                    s(Population, bs="re"), method="ML", data=data_dyn)
+mod_1 <- mgcv::gam(Nb_adults ~ OFGroup_diversity + Block +  
+                    s(Generation_Eggs, k=5) + 
+                     s(Generation_Eggs, by = OFGroup_diversity, k=5) + 
+                    s(Population, bs="re"), method="ML", family = "poisson", link = log, data=data_dyn)
 
 
 summary(mod_1)
-#We confirm: No interaction significative
-# The summary now provides the significance of the difference terms: Medium and High does not show a significantly different trend over Time (F=0.130, edf=1.21, p=0.69), Low and High does not showa significantly different trend over Time (F=0.226, edf=1.001, p=0.02). 
+#We confirm: Interaction significative
+# The summary now provides the significance of the difference terms: Medium and High does show a significantly different trend over Time (F=3752, edf=3.78, p=0.01), Low and High does show significantly different trend over Time (F=5691, edf=3.92, p=0.01). 
 
-mod_2 <- mgcv::gam(Nb_adults ~ OFGroup_diversity + Block +   s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), method="ML", data=data_dyn)
-summary(mod_2)
 
   
 ###### 2-  Visualization of the smooth terms
@@ -1943,76 +1999,96 @@ summary(mod_2)
 data_dyn <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
-                     s(Generation_Eggs, k=5) +  
-                     s(Population, bs="re"), data=data_dyn)
+                    s(Generation_Eggs, k=5) + s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"),  family = "poisson", link = log, data=data_dyn)
 
 
 # Plot  block effect
 mod_block_P <- tidymv::predict_gam(mod_final, 
                                exclude_terms = list("s(Population)"), 
                                values = list(Population = NULL))
+# ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
+#     facet_wrap(~ Block) +
+#     tidymv::geom_smooth_ci(Genetic_Diversity)
 
-
-
-
-ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
-    facet_wrap(~ Block) +
-    tidymv::geom_smooth_ci(Genetic_Diversity)
 
 
 
 # Plot Diversity effect
 mod_A_p <- tidymv::predict_gam(mod_final, 
                                exclude_terms = list("s(Population)", "Block"), 
-                               values = list(Population = NULL, Block = NULL))
+                               values = list(Population = NULL, Block = NULL),
+                               type = "link")
 
+# mod_A_p$fit <- exp(mod_A_p$fit)
+# mod_A_p$se.fit <- exp(mod_A_p$se.fit)
 ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
    tidymv::geom_smooth_ci(Genetic_Diversity) 
 
- 
-## Prediction for main text 
-#population size at the end
-as.data.frame(mod_A_p[mod_A_p$Generation_Eggs==6,])
 
-#minimum population size 
-tempdata <- as.data.frame(mod_A_p)
-tapply(mod_A_p$fit,mod_A_p$Genetic_Diversity,min)
-tempdata[tempdata$Genetic_Diversity=="High"&tempdata$fit<=114,]
+########## Other function EXCLUDING BLOCK EFFECT 
+mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
+                    s(Generation_Eggs, k=5) + s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"),  family = "poisson", link = log, data=data_dyn)
+
+
+
+mod_A_p <- tidymv::get_gam_predictions(model = mod_final,
+                                       series = Generation_Eggs,
+                                       exclude_random = TRUE,
+                                       transform = exp)
+
+tidymv::plot_smooths(mod_final, Generation_Eggs, Genetic_Diversity,
+                     exclude_random = TRUE,
+                     transform = exp)
+
+
+
+# ## Other functions 
+# data_predict_gam <- data.frame(Generation_Eggs = rep(seq(2,6, 0.01),3),
+#                                Genetic_Diversity = rep(levels(data_dyn$Genetic_Diversity),
+#                                                        each=length(seq(2,6,0.01))),
+#                                Block = "Block4", 
+#                                Population = rep(c("High1","Med1","Low1"),
+#                                                 each=length(seq(2,6,0.01))))
+# library(mgcv)
+# data_predict_gam$fit<- mgcv::predict.gam(mod_final, newdata = data_predict_gam,
+#             exclude_terms = list("s(Population)", "Block"),
+#             values = list(Population = NULL, Block = NULL),
+#             type = "response")
+# ggplot(data = data_predict_gam, aes(Generation_Eggs, fit)) 
+
+
 
 ## PLOT
-
 plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
   geom_point(data = data[data$Extinction_finalstatus=="no",], 
              aes(x = Generation_Eggs,
                                 y = Nb_adults,
                                group = Genetic_Diversity,
-                               # group = Population,
                                 colour = Genetic_Diversity),
              position = position_dodge2(0.3), 
              size = 0.6, alpha = 0.9) +
-  tidymv::geom_smooth_ci(Genetic_Diversity, 
-                 size = 1.5, linetype = 1)  + 
+  # tidymv::plot_smooths(mod_final, Generation_Eggs, Genetic_Diversity,
+  #                    exclude_random = TRUE,
+  #                    transform = exp) +
+  tidymv::geom_smooth_ci(Genetic_Diversity,
+                 size = 1.5, linetype = 1)  +
   ylab("Population size") +
   xlab("Generation") +
   scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"),
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
-                   # values = c("#685338", "#FEA698", "#7BC7AD")) +
-                   # values = c( "#51392C","#DA5837", "#4C9E97")) +
-                   # values = c( "#00AFBB", "#E7B800", "#FC4E07")) +
-                  #  values = c("#9AD3CA", "#929FD1", "#E7C7D7")) +
-                   #values = c("#227C9D", "#FFCB77", "#FE6D73")) +
                      values = c("#00AFBB","#FC4E07","#E7B800")) +
  xlim(1.8,6.2) +
  theme_LO  + 
  theme(panel.grid.major.y = element_blank(),
         panel.grid.minor.y = element_blank())
-  
+ plot_GAM_Ucurve
 
 
-plot_GAM_Ucurve
-
-# cowplot::save_plot(file = here::here("figures","PopulationSize_GAM.pdf"),
+ 
+ # cowplot::save_plot(file = here::here("figures","PopulationSize_GAM.pdf"),
 #                    plot_GAM_Ucurve, base_height = 10/cm(1),
 #                    base_width = 13/cm(1), dpi = 610)
 # 
@@ -2032,6 +2108,19 @@ data_gam_end
 # plot_GAM_Ucurve + 
 #   ylim (50,170) + 
 #   xlim (5.9,6.1)
+
+
+
+## Prediction for main text 
+#population size at the end
+as.data.frame(mod_A_p[mod_A_p$Generation_Eggs==6,])
+
+
+#minimum population size 
+tempdata <- as.data.frame(mod_A_p)
+tapply(mod_A_p$fit,mod_A_p$Genetic_Diversity,min)
+tempdata[tempdata$Genetic_Diversity=="High"&tempdata$fit<=114,]
+
 
 ```
 
