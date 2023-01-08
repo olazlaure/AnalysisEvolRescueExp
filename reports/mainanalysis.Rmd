@@ -271,37 +271,37 @@ data_phenotyping_all <- rbind(data_phenotyping,data_phenotyping_4week)
 
 ## Survival data
 ```{r }
-library(survival)
-library(lubridate)
-library(ggsurvfit)
-library("gtsummary")
-library("tidycmprsk")
-library("condSURV")
-
-#########
-
-
-data_survival <- data[data$Generation_Parents==0,c("Population","Block","Genetic_Diversity")]
-data_survival$Gen_eggs_extinct <- max(data$Generation_Eggs) 
-data_survival$Survival <- "yes" 
-
-#Format data
-for (i in unique(data_survival$Population)) {
-  if (data$Extinction_finalstatus[data$Population==i&data$Generation_Eggs==1] == "yes" ) {
-    data_survival$Gen_eggs_extinct[data_survival$Population==i]<-
-      min(data$Generation_Eggs[data$Population==i&data$First_Throw=="extinct"])
-    data_survival$Survival[data_survival$Population==i] <- "extinct"
-  }else{
-    print(i)
-  }
-}
-
-
-  str(data_survival)
-data_survival$Survival <- as.factor(data_survival$Survival)
-#Note: the Surv() function in the {survival} package accepts by default TRUE/FALSE, where TRUE is event and FALSE is censored; 1/0 where 1 is event and 0 is censored; or 2/1 where 2 is event and 1 is censored. Please take care to ensure the event indicator is properly formatted.
-data_survival$status <- ifelse(data_survival$Survival=="extinct", 1, 0)
-  
+# library(survival)
+# library(lubridate)
+# library(ggsurvfit)
+# library("gtsummary")
+# library("tidycmprsk")
+# library("condSURV")
+# 
+# #########
+# 
+# 
+# data_survival <- data[data$Generation_Parents==0,c("Population","Block","Genetic_Diversity")]
+# data_survival$Gen_eggs_extinct <- max(data$Generation_Eggs) 
+# data_survival$Survival <- "yes" 
+# 
+# #Format data
+# for (i in unique(data_survival$Population)) {
+#   if (data$Extinction_finalstatus[data$Population==i&data$Generation_Eggs==1] == "yes" ) {
+#     data_survival$Gen_eggs_extinct[data_survival$Population==i]<-
+#       min(data$Generation_Eggs[data$Population==i&data$First_Throw=="extinct"])
+#     data_survival$Survival[data_survival$Population==i] <- "extinct"
+#   }else{
+#     print(i)
+#   }
+# }
+# 
+# 
+#   str(data_survival)
+# data_survival$Survival <- as.factor(data_survival$Survival)
+# #Note: the Surv() function in the {survival} package accepts by default TRUE/FALSE, where TRUE is event and FALSE is censored; 1/0 where 1 is event and 0 is censored; or 2/1 where 2 is event and 1 is censored. Please take care to ensure the event indicator is properly formatted.
+# data_survival$status <- ifelse(data_survival$Survival=="extinct", 1, 0)
+#   
 
 
 ```
@@ -476,10 +476,13 @@ PLOT_Extinction<-ggplot2::ggplot(data,  aes(x = factor(Generation_Eggs),
   scale_color_manual(values = c("black", "red")) +
   ylab("Population size") +
   xlab("Generation") +
-  theme_LO +
-  theme(legend.position = "none",
+  theme_LO + 
+  theme(strip.background = element_rect(color="grey30", 
+                                        fill="white", size=0.5, linetype="solid"), 
+        strip.text.x = element_text(size = 10, color = "black", face = "bold"),
         panel.grid.major.y = element_blank(),
-        panel.grid.minor.y = element_blank())
+        panel.grid.minor.y = element_blank(), 
+        legend.position = "none")
 
 PLOT_Extinction
 # 
@@ -779,11 +782,13 @@ PLOT_He_extinction <-ggplot2::ggplot(data, aes(x = factor(Generation_Eggs),
   geom_line(position = position_dodge(0.5), 
             size = 0.25, alpha = 0.6) +
   geom_point(position = position_dodge(0.5), size = 3,  stroke = 0.6,
-             fill= "white", alpha = 0.8) +
+             alpha = 0.8) +
   ylab("Expected heterozygozity") +
   scale_color_manual(values = c("black", "red")) +
   scale_shape_manual(values = c(21, 13), guide=FALSE) +
   labs(color="Extinct populations") +
+  guides(color = guide_legend(
+    override.aes=list(shape = 21, fill="white"))) +
   xlab("Generation") +
   theme_LO
 PLOT_He_extinction
@@ -1142,556 +1147,8 @@ exp(1.6094)
 ``` 
 
 
-## Supplement: Survival analysis
-```{r }
-str(data_survival)
-#Note: the Surv() function in the {survival} package accepts by default TRUE/FALSE, where TRUE is event and FALSE is censored; 1/0 where 1 is event and 0 is censored; or 2/1 where 2 is event and 1 is censored. Please take care to ensure the event indicator is properly formatted.
-  
-
-# The Surv() function from the {survival} package creates a survival object for use as the response in a model formula. There will be one entry for each subject that is the survival time, which is followed by a + if the subject was censored. Let’s look at the first 10 observations:
-Surv(data_survival$Gen_eggs_extinct, data_survival$status)
-
-#Surv(data_survival_all$Gen_eggs_extinct, data_survival$status)
-
-
-
-# The survfit() function creates survival curves using the Kaplan-Meier method based on a formula. Let’s generate the overall survival curve for the entire cohort, assign it to object s1, and look at the structure using str():
-s1 <- survfit(Surv(Gen_eggs_extinct, status) ~ 1, data = data_survival)
-str(s1)
-# time: the timepoints at which the curve has a step, i.e. at least one event occurred
-# surv: the estimate of survival at the corresponding time
-
-
-   
-# The {ggsurvfit} package works best if you create the survfit object using the included ggsurvfit::survfit2() function, which uses the same syntax to what we saw previously with survival::survfit(). The ggsurvfit::survfit2() tracks the environment from the function call, which allows the plot to have better default values for labeling and p-value reporting.
-# 
-
-####
-#### PLOT 
-####
-ggsurvfit::survfit2(Surv(Gen_eggs_extinct, status) ~ 1, data = data_survival) %>% 
-  ggsurvfit() +
-  ggplot2::labs( x = "Generation",
-        y = "Overall survival probability") + 
-  add_confidence_interval()  +
-  add_risktable()
-
-summary(survfit(Surv(Gen_eggs_extinct, status) ~ 1, data = data_survival))
-
-
-
-##### COMPARISONS ACROSS GROUPS
-# We can conduct between-group significance tests using a log-rank test. The log-rank test equally weights observations over the entire follow-up time and is the most common way to compare survival times between groups. There are versions that more heavily weight the early or late follow-up that could be more appropriate depending on the research question (see ?survdiff for different test options).
-# 
-# We get the log-rank p-value using the survdiff function. For example, we can test whether there was a difference in survival time according to the demography history in the lung data:
-  
-  
-
-#Comparison 
-survdiff(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
-
-summary(survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival))
-
-
-
-
-####
-#### PLOT 
-####
-plot_survival <- ggsurvfit::survfit2(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival) %>% 
-  ggsurvfit(size = 2) +
-  labs( x = "Generation",
-        y = "Overall survival probability") + 
-  add_confidence_interval(alpha = 0.1)  + 
-  add_censor_mark(size = 8, shape = "x") +
-  scale_fill_manual(name="Demographic history",
-                     breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
-                    values = c("#00AFBB","#FC4E07", "#E7B800")) + 
-  scale_color_manual(name="Demographic history",
-                     breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
-                    values = c("#00AFBB","#FC4E07", "#E7B800"))  #+  add_risktable()
-plot_survival
-
-
-# cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis.pdf"),   
-#                    plot_survival, base_height = 10/cm(1),  base_width = 15/cm(1), dpi = 610)
-
-
-# COX representation 
-coxph(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
-
-coxph(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival) %>% 
-  gtsummary::tbl_regression(exp = TRUE) 
-
-# The quantity of interest from a Cox regression model is a hazard ratio (HR). The HR represents the ratio of hazards between two groups at any particular point in time. The HR is interpreted as the instantaneous rate of occurrence of the event of interest in those who are still at risk for the event. It is not a risk, though it is commonly mis-interpreted as such. If you have a regression parameter β, then HR = exp(β).
-# 
-# A HR < 1 indicates reduced hazard of death whereas a HR > 1 indicates an increased hazard of death.
-# 
-# So the HR = 0.59 implies that 0.59 times as many females are dying as males, at any given time. Stated differently, females have a significantly lower hazard of death than males in these data.
-
-
-
-
-
-
-
-### OTHER REPRESENTATION :  
-s2 <- survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
-summary(s2)
-print(s2)
-# Access to the sort summary table
-summary(s2)$table
-
-d <- data.frame(time = s2$time,
-                  n.risk = s2$n.risk,
-                  n.event = s2$n.event,
-                  n.censor = s2$n.censor,
-                  surv = s2$surv,
-                  upper = s2$upper,
-                  lower = s2$lower)
-head(d)
-
-
-plot2 <- survminer::ggsurvplot(s2,
-                               pval = TRUE,             # show p-value of log-rank test.
-                               #pval.coord  = c(1,0.2), 
-                               pval.size = 5, 
-                               conf.int = TRUE,         # show confidence intervals for point estimaes of survival curves.
-                               # conf.int.style = "step",  # customize style of confidence intervals
-                               conf.int.style = "ribbon",  # customize style of confidence intervals 
-                               conf.int.alpha = 0.3,  # customize style of confidence intervals
-                               censor = TRUE, 
-                               censor.shape = "x", 
-                               censor.size = 6, 
-                               xlab = "Generation",   # customize X axis label.
-                               break.time.by = 1,     # break X axis in time intervals by 1
-                               ggtheme = theme_light(), # customize plot and risk table with a theme.
-                              #risk.table = TRUE, # Add risk table
-                              #linetype = "strata", # Change line type by groups
-                               risk.table = "abs_pct",  # absolute number and percentage at risk.
-                               risk.table.y.text.col = T,# colour risk table text annotations.
-                               risk.table.y.text = FALSE,# show bars instead of names in text annotations in legend of risk table.
-                               risk.table.col = "strata", # Change risk table color by groups
-                               legend.labs = c("Diverse","Intermediate bottleneck","Strong bottleneck"),   
-                               legend = c("right"),
-                              legend.title = c("Demographic\nhistory:"),   
-                               palette = c("#00AFBB", "#E7B800", "#FC4E07")) 
-
-
-
-plot2
-# 
-# cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis_V2.pdf"),
-#                    plot2, base_height = 10/cm(1),  base_width = 15/cm(1), dpi = 610)
-
-
-
-# Fit a Cox proportional hazards model
-# fit.coxph <- coxph(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
-# ggforest(fit.coxph, data = data_survival)
-
-
-
-``` 
-
-
 
 ## Population size over time
-### Old: Polynomial analysis 
-#### Prelim: test function
-```{r }
-
-
-####################### 
-####################### MODEL INCLUDING GENETIC DIVERSITY WITHOUT GEN 1  
-####################### 
-###################### REMOVE GEN 1 ##########################33
-
-#If we dont consider Gen=1 
-PLOT_Pop_size_average
-fit <- lm(log(Nb_adults+1) ~ Generation_Eggs, data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
-#second degree
-fit2 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,2,raw=TRUE), 
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
-#third degree
-fit3 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,3,raw=TRUE), 
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
-#fourth degree
-fit4 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,4,raw=TRUE), 
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
-#fourth degree
-fit5 <- lm(log(Nb_adults+1)~stats::poly(Generation_Eggs,5,raw=TRUE), 
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
-#exp
-fit6 <- lm(log(Nb_adults+1)~exp(Generation_Eggs), 
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
-#log
-fit7 <- lm(log(Nb_adults+1)~log(Generation_Eggs), 
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",])
-
-fit <- glm(Nb_adults ~ Generation_Eggs, 
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-fit2 <- glm(Nb_adults~stats::poly(Generation_Eggs,2,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-fit3 <- glm(Nb_adults~stats::poly(Generation_Eggs,3,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-fit4 <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-fit5 <- glm(Nb_adults~stats::poly(Generation_Eggs,5,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-fit6 <- glm(Nb_adults~exp(Generation_Eggs), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-fit7 <- glm(Nb_adults~log(Generation_Eggs), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-
-
-
-
-
-#generate range of 50 numbers starting from 30 and ending at 160
-# xx <- seq(1,6, length=100)
-# plot(data[data$Generation_Eggs>=2,]$Generation_Eggs,
-#      log(data[data$Generation_Eggs>=2,]$Nb_adults+1),pch=19,ylim=c(0,8))
-# lines(xx, predict(fit, data.frame(Generation_Eggs=xx)), col="red")
-# lines(xx, predict(fit2, data.frame(Generation_Eggs=xx)), col="green")
-# lines(xx, predict(fit3, data.frame(Generation_Eggs=xx)), col="blue")
-# lines(xx, predict(fit4, data.frame(Generation_Eggs=xx)), col="purple")
-# lines(xx, predict(fit5, data.frame(Generation_Eggs=xx)), col="yellow")
-# lines(xx, predict(fit6, data.frame(Generation_Eggs=xx)), col="orange")
-# lines(xx, predict(fit7, data.frame(Generation_Eggs=xx)), col="pink")
-xx <- seq(1,6, length=100)
-plot(data[data$Generation_Eggs>=2,]$Generation_Eggs,
-     data[data$Generation_Eggs>=2,]$Nb_adults,pch=19)
-lines(xx, predict(fit, data.frame(Generation_Eggs=xx),type = "response"), col="red")
-lines(xx, predict(fit2, data.frame(Generation_Eggs=xx),type = "response"), col="green")
-lines(xx, predict(fit3, data.frame(Generation_Eggs=xx),type = "response"), col="blue")
-lines(xx, predict(fit4, data.frame(Generation_Eggs=xx),type = "response"), col="purple")
-lines(xx, predict(fit5, data.frame(Generation_Eggs=xx),type = "response"), col="yellow")
-lines(xx, predict(fit6, data.frame(Generation_Eggs=xx),type = "response"), col="orange")
-lines(xx, predict(fit7, data.frame(Generation_Eggs=xx),type = "response"), col="pink")
-
-
-# Check the r squared
-rsq::rsq(fit,adj=TRUE)
-rsq::rsq(fit2,adj=TRUE)
-rsq::rsq(fit3,adj=TRUE)
-rsq::rsq(fit4,adj=TRUE)
-rsq::rsq(fit5,adj=TRUE)
-rsq::rsq(fit6,adj=TRUE)
-rsq::rsq(fit7,adj=TRUE)
-
-# Best model is fit 2
-
-#data$gen_square <- data$Generation_Eggs^2
-fit2 <- glm(Nb_adults~stats::poly(Generation_Eggs,2,raw=TRUE), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-fit2 <- glm(Nb_adults~Generation_Eggs + gen_square, 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-
-# fit2 <- lm(log(Nb_adults+1)~poly(Generation_Eggs,2,raw=TRUE), data = data[data$Generation_Eggs>=2,])
-# fit2 <- lm(log(Nb_adults+1)~ Generation_Eggs + gen_square, data = data[data$Generation_Eggs>=2,])
-#Add the interaction with Genetic diversity
-fit2 <- glm(Nb_adults~ Generation_Eggs*Genetic_Diversity +
-             gen_square*Genetic_Diversity,
-           data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
-           family = "poisson")
-
-
-summary(fit2)
-
-####### Next step: Final step: add genetic diversity 
-
-``` 
-
-
-#### Analysis
-```{r }
-#Test oversdispersion
-mod0 <- glm(Nb_adults~Generation_Eggs*Genetic_Diversity + 
-              gen_square*Genetic_Diversity + 
-              Block , 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
-            family = "poisson")
-sqrt(deviance(mod0)/(nobs(mod0)-length(coef(mod0))))
-sigma(mod0)
-# ccl: overdispersion
-
-
-mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs) , 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
-            family = "poisson")
-blmeco::dispersion_glmer(mod1)
-sigma(mod1)
-
-#Convergence issue 
-max(abs(with(mod1@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
-
-
-
-mod1
-
-#Test add Population random
-mod0 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs) + (1|Population), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], 
-            family = "poisson")
-
-max(abs(with(mod0@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
-max(abs(with(mod1@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
-anova(mod0, mod1, test ="Chisq")  
-
-
-
-
-########## LRT and Final model: 
-mod1 <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs)  + (1|Population), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-mod2 <- lme4::glmer(Nb_adults~Generation_Eggs + gen_square + Genetic_Diversity + 
-                Block  + (1|obs)  + (1|Population), 
-            data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",], family = "poisson")
-anova(mod1, mod2, test ="Chisq")  
-
-
-
-#Predict data
-filldata <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity),100), 
-                       Generation_Eggs = rep(seq(2,6, length = 100),each=3),
-                       Block = "Block4",
-                       gen_square = (rep(seq(2,6, length = 100),each=3))^2,
-                       Estimates = NA)
-
-filldata$Estimates <- predict(mod1, newdata=filldata, type = "response", re.form=~0)
-
-
-#Plot
-PLOT_Pop_size <- ggplot2::ggplot(data = data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]) + 
-  geom_line(data = filldata, aes(x = Generation_Eggs, 
-                                y = Estimates, 
-                               colour = Genetic_Diversity), size = 1.3) +
-  geom_point(data = data, 
-                      aes(x = Generation_Eggs, 
-                                y = Nb_adults, 
-                                colour = Genetic_Diversity),
-             position = position_dodge(0.4), size = 1.4, alpha = 0.6) +
-  ylab("Population size") +
-  labs(color="Genetic diversity") +
-  xlab("Generation") +
-  theme_LO
-PLOT_Pop_size
-
-emmeans::emmeans(mod1, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-
-
-``` 
-
-
-#### Extra: with gen1
-```{r }
-
-
-###################################################################
-###################################################################
-###################################################################
-###################################################################
-####################  EXTRA: INCLUDING GEN 1 ###########################
-PLOT_Pop_size_average
-fit <- glm(Nb_adults ~ Generation_Eggs, data = data, family = "poisson")
-#second degree
-fit2 <- glm(Nb_adults~stats::poly(Generation_Eggs,2,raw=TRUE), data = data, family = "poisson")
-#third degree
-fit3 <- glm(Nb_adults~stats::poly(Generation_Eggs,3,raw=TRUE), data = data, family = "poisson")
-#fourth degree
-fit4 <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE), data = data, family = "poisson")
-#fourth degree
-fit5 <- glm(Nb_adults~stats::poly(Generation_Eggs,5,raw=TRUE), data = data, family = "poisson")
-#exp
-fit6 <- glm(Nb_adults~exp(Generation_Eggs), data = data, family = "poisson")
-#log
-fit7 <- glm(Nb_adults~log(Generation_Eggs), data = data, family = "poisson")
-
-
-#generate range of 50 numbers starting from 30 and ending at 160
-xx <- seq(1,6, length=100)
-plot(data$Generation_Eggs,
-     data$Nb_adults,pch=19)
-lines(xx, predict(fit, data.frame(Generation_Eggs=xx),type = "response"), col="red")
-lines(xx, predict(fit2, data.frame(Generation_Eggs=xx),type = "response"), col="green")
-lines(xx, predict(fit3, data.frame(Generation_Eggs=xx),type = "response"), col="blue")
-lines(xx, predict(fit4, data.frame(Generation_Eggs=xx),type = "response"), col="purple")
-lines(xx, predict(fit5, data.frame(Generation_Eggs=xx),type = "response"), col="yellow")
-lines(xx, predict(fit6, data.frame(Generation_Eggs=xx),type = "response"), col="orange")
-lines(xx, predict(fit7, data.frame(Generation_Eggs=xx),type = "response"), col="pink")
-
-# Check the r squared
-summary(fit)$adj.r.squared
-summary(fit2)$adj.r.squared
-summary(fit3)$adj.r.squared
-summary(fit4)$adj.r.squared # best r square
-summary(fit5)$adj.r.squared 
-summary(fit6)$adj.r.squared 
-summary(fit7)$adj.r.squared 
-
-rsq::rsq(fit,adj=TRUE)
-rsq::rsq(fit2,adj=TRUE)
-rsq::rsq(fit3,adj=TRUE)
-rsq::rsq(fit4,adj=TRUE)
-rsq::rsq(fit5,adj=TRUE)
-rsq::rsq(fit6,adj=TRUE)
-rsq::rsq(fit7,adj=TRUE)
-
-
-
-#
-fit4 <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE), data = data, family = "poisson")
-
-
-####################### 
-####################### MODEL INCLUDING GENETIC DIVERSITY and GEN 1 
-####################### 
-
-#Test oversdispersion
-fit4 <- lme4::glmer(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE)*Genetic_Diversity + (1|Block), data = data, family = "poisson")
-blmeco::dispersion_glmer(fit4)
-
-mod <- lme4::glmer(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE)*Genetic_Diversity + 
-               (1|Block) + (1|obs), data = data, family = "poisson")
-blmeco::dispersion_glmer(mod)
-
-
-#Convergence issue 
-max(abs(with(mod@optinfo$derivs, solve(Hessian, gradient)))) #should be <0.001
-
-#Predict data
-filldata <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity),100), 
-                       Generation_Eggs = rep(seq(1,6, length = 100),each=3),
-                       Block = "Block4", 
-                       Estimates = NA)
-filldata$Estimates <- predict(fit4, newdata=filldata, type = "response")
-
-
-#Plot
-PLOT_Pop_size <- ggplot2::ggplot(data = data) + 
-  geom_line(data = filldata, aes(x = Generation_Eggs, 
-                                y = Estimates, 
-                               colour = Genetic_Diversity), size = 1.3) +
-  geom_point(data = data, 
-                      aes(x = Generation_Eggs, 
-                                y = Nb_adults, 
-                                colour = Genetic_Diversity),
-             position = position_dodge(0.4), size = 1.4, alpha = 0.6) +
-  ylab("Population size") +
-  labs(color="Genetic diversity") +
-  xlab("Generation") +
-  theme_LO
-PLOT_Pop_size
-
-
-
-
-# fit2 <- lm(log(Nb_adults+1)~ Generation_Eggs*Genetic_Diversity + 
-#              gen_square*Genetic_Diversity, 
-#            data = data[data$Generation_Eggs>=2,])
-# fit2_test <- lm(log(Nb_adults+1)~ Generation_Eggs+Genetic_Diversity + 
-#              gen_square, 
-#            data = data[data$Generation_Eggs>=2,])
-
-mod <- lme4::glmer(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE)*Genetic_Diversity + 
-               (1|Block) + (1|obs), data = data, family = "poisson")
-mod1 <- lme4::glmer(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE)+Genetic_Diversity + 
-               (1|Block) + (1|obs), data = data, family = "poisson")
-anova(mod,mod1, test = "Chisq")
-#Signifcant interaction 
-summary(mod)
-summary(mod1)
-
-
-emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-
-
-
-
-####################### 
-####################### MODEL INCLUDING ONLY RESCUED POPULATIONS
-####################### 
-#Same but only for population not extinct
-fit_fin <- glm(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE)*Genetic_Diversity,
-            data = data[data$Extinction_finalstatus=="no",], family = "poisson")
-
-filldata$Estimates_Withoutextpop <- predict(fit_fin, newdata=filldata, type = "response")
-
-PLOT_Pop_size <- ggplot2::ggplot(data = data) + 
-  geom_line(data = filldata, aes(x = Generation_Eggs, 
-                                y = Estimates_Withoutextpop, 
-                               colour = Genetic_Diversity), size = 1.5, linetype = "longdash") +
-  geom_point(data = data[data$Extinction_finalstatus=="no",], 
-                      aes(x = Generation_Eggs, 
-                                y = Nb_adults, 
-                                colour = Genetic_Diversity),
-             position = position_dodge(0.4), size = 1.4, alpha = 0.5) +
-  ylab("Population size") +
-  labs(color="Genetic diversity") +
-  xlab("Generation") +
-  theme_LO
-PLOT_Pop_size
-
-
-
-
-mod <- lme4::glmer(Nb_adults~stats::poly(Generation_Eggs,4,raw=TRUE)*Genetic_Diversity + 
-               (1|Block) + (1|obs), 
-             data = data[data$Extinction_finalstatus=="no",], family = "poisson")
-mod1 <- lme4::glmer(Nb_adults~poly(Generation_Eggs,4,raw=TRUE)+Genetic_Diversity + 
-               (1|Block) + (1|obs), 
-              data = data[data$Extinction_finalstatus=="no",], family = "poisson")
-anova(mod,mod1, test = "Chisq")
-
-
-summary(mod)
-
-emmeans::emmeans(mod, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-``` 
-
-
-#### Extra: Pop. size G6
-```{r }
-
-############ 
-###### Analysis
-############ 
-#Analysis
-# mod0 <- lme4::glmer(Nb_adults ~ Genetic_Diversity + Block + (1|Population),  
-#       data = data[data$Generation_Eggs==6,], family = "poisson")
-
-
-mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
-             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
-
-mod1 <- lm(log(Nb_adults) ~ Block , 
-             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
-
-anova(mod0, mod1) # Effect of genetic diversity 
-
-mod0 <- lm(log(Nb_adults) ~ Genetic_Diversity + Block, 
-             data = data[data$Generation_Eggs==6&data$Extinction_finalstatus == "no",])
-
-
-summary(mod0)
-
-
-############ 
-###### Posthoc
-############ 
-emmeans::emmeans(mod0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-``` 
-
 ### GAMMM Model
 #### Basic model
 ```{r }
@@ -1892,12 +1349,15 @@ summary(mod0)
 data_dyn$obs<-as.factor(1:nrow(data_dyn))
 
 
-mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=3) +
-                    #s(Generation_Eggs, by = Genetic_Diversity, k=3) + 
-                    s(Population, bs="re") + s(obs, bs = "re"), 
-                    method="ML",  family = "poisson", link = log, data=data_dyn)
+mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), 
+                    method="ML",  family = nb(), link = log, data=data_dyn)
 
-
+#Check overdispersion 
+sqrt(deviance(mod0)/(nobs(mod0)-length(coef(mod0))))
+sigma(mod0)
+summary(mod0)
 ```
 
 #### Testing for significance
@@ -1912,36 +1372,32 @@ mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k
 ### Test interaction Generation*Genetic Diversity
 mod_1 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), method="ML",  family = "poisson", link = log, data=data_dyn)
+                    s(Population, bs="re"), method="ML",  family = nb(),  data=data_dyn)
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, family = "poisson", link = log, method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = nb(),  method='ML')
 
 itsadug::compareML(mod_1, mod_2)
 AIC(mod_1, mod_2)
 
 
 ### Test effect Generation
-# mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  
-#                     s(Generation_Eggs, k=5) +
-#                      s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-#                     s(Population, bs="re"), data=data_dyn, family = "poisson", link = log, method='ML')
-# mod_3 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +   
-#                      s(Generation_Eggs, by = Genetic_Diversity, k=5) +
-#                     s(Population, bs="re"), data=data_dyn, family = "poisson",link = log, method='ML')
-# itsadug::compareML(mod_3, mod_2)
-# 
+mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
+                    s(Generation_Eggs, k=5) +
+                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
+mod_3 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
+                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
+itsadug::compareML(mod_3, mod_2)
+
 # 
 
 
 ### Test intercept Genetic Diversity
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  
                     s(Generation_Eggs, k=5) +
-                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), data=data_dyn, family = "poisson", link = log, method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = nb(),   method='ML')
 mod_3 <- mgcv::gam(Nb_adults ~ Block  +   
                     s(Generation_Eggs, k=5) +
-                     s(Generation_Eggs, by = Genetic_Diversity, k=5) +
-                    s(Population, bs="re"), data=data_dyn, family = "poisson",link = log, method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
 itsadug::compareML(mod_3, mod_2)
 
 
@@ -1950,15 +1406,7 @@ itsadug::compareML(mod_3, mod_2)
 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
                          s(Generation_Eggs, k=5) +
-                         s(Generation_Eggs, by = Genetic_Diversity, k=5) +
-                         s(Population, bs="re"), data=data_dyn,  family = "poisson", link = log, method='ML')
-
-
-
-mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity-1 + Block  +
-                         s(Generation_Eggs, k=5) +
-                         s(Generation_Eggs, by = Genetic_Diversity, k=5) +
-                         s(Population, bs="re"), data=data_dyn, family = "poisson",link = log,  method='ML')
+                         s(Population, bs="re"), data=data_dyn,  family = nb(), method='ML')
 
 
 ###### 2- Summary of the model
@@ -1975,12 +1423,12 @@ contrasts(data_dyn$OFGroup_diversity)
 mod_1 <- mgcv::gam(Nb_adults ~ OFGroup_diversity + Block +  
                     s(Generation_Eggs, k=5) + 
                      s(Generation_Eggs, by = OFGroup_diversity, k=5) + 
-                    s(Population, bs="re"), method="ML", family = "poisson", link = log, data=data_dyn)
+                    s(Population, bs="re"), method="ML", family = nb(), data=data_dyn)
 
 
 summary(mod_1)
 #We confirm: Interaction significative
-# The summary now provides the significance of the difference terms: Medium and High does show a significantly different trend over Time (F=3752, edf=3.78, p=0.01), Low and High does show significantly different trend over Time (F=5691, edf=3.92, p=0.01). 
+# The summary now provides the significance of the difference terms: Medium and High does show a slightly significantly different trend over Time (F=5.50, edf=1, p=0.02), Low and High does not show significantly different trend over Time (F=19.8, edf=1, p=0.07). 
 
 
   
@@ -1999,17 +1447,17 @@ summary(mod_1)
 data_dyn <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
-                    s(Generation_Eggs, k=5) + s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"),  family = "poisson", link = log, data=data_dyn)
+                    s(Generation_Eggs, k=5) + 
+                    s(Population, bs="re"),  family = nb(), data=data_dyn)
 
 
 # Plot  block effect
 mod_block_P <- tidymv::predict_gam(mod_final, 
                                exclude_terms = list("s(Population)"), 
                                values = list(Population = NULL))
-# ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
-#     facet_wrap(~ Block) +
-#     tidymv::geom_smooth_ci(Genetic_Diversity)
+ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
+    facet_wrap(~ Block) +
+    tidymv::geom_smooth_ci(Genetic_Diversity)
 
 
 
@@ -2028,8 +1476,8 @@ ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
 
 ########## Other function EXCLUDING BLOCK EFFECT 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
-                    s(Generation_Eggs, k=5) + s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"),  family = "poisson", link = log, data=data_dyn)
+                         s(Generation_Eggs, k=5) +
+                         s(Population, bs="re"),  family = nb(), data=data_dyn)
 
 
 
@@ -2125,195 +1573,7 @@ tempdata[tempdata$Genetic_Diversity=="High"&tempdata$fit<=114,]
 ```
 
 
-## Old: Variance over time 
-### Residuals residuals
-```{r }
-#data$gen_square <- data$Generation_Eggs^2
-data_G2_all <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
-data_G2_all <- data_G2_all[complete.cases(data_G2_all$Nb_adults), ]
-
-Initial_model<- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs), 
-            data = data_G2_all, 
-            family = "poisson")
-data_G2_all$resid <- resid(Initial_model)
-
-PLOT_Pop_size_predict
-
-#PLOT RESIDUALS
-
-ggplot2::ggplot(data_G2_all, aes(x = factor(Generation_Eggs),  
-                                 y = resid, 
-                                 colour = Genetic_Diversity)) + 
-  geom_boxplot(outlier.color = NA) +
-  geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
-  scale_color_manual(name="Demographic history",
-                     breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
-                    values = c("#00AFBB","#E7B800","#FC4E07")) +
-  ylab("Resid(pop size)") +
-  xlab("Generation") +
-  theme_LO
-
-########### 
-########### OPTION A: Test random effects 
-########### 
-
-# Test variances with residuals and random effects: 
-model_withrandomeffect <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs) + (1|Genetic_Diversity:Generation_Eggs) , 
-            data = data_G2_all, 
-            family = "poisson")
-model_withoutrandomeffect <- lme4::glmer(Nb_adults~Generation_Eggs*Genetic_Diversity + gen_square*Genetic_Diversity + 
-                Block  + (1|obs) , 
-            data = data_G2_all, 
-            family = "poisson")
-
-anova(model_withrandomeffect,model_withoutrandomeffect, test = "Chisq")
-AIC(model_withrandomeffect)
-AIC(model_withoutrandomeffect) 
-#Best model: without random effects 
-
-summary(model_withoutrandomeffect)
-
-#Note: should be the same as: 
-model_lm_withrandomeffects <- lme4::lmer(resid ~ (1|Genetic_Diversity:Generation_Eggs), data = data_G2_all)
-lmerTest::rand(model_lm_withrandomeffects)
-
-########### 
-########### OPTION B: Test with Levene's test on residuals
-########### 
-
-# Test variances with Levene's test 
-tapply(data_G2_all$resid, list(data_G2_all$Generation_Eggs, data_G2_all$Genetic_Diversity),var)
-
-# Levene’s test on the varianc
-# Using leveneTest()
-car::leveneTest(resid ~ interaction(Generation_Eggs, Genetic_Diversity), data = data_G2_all)
-
-# PairedData::levene.var.test(data_G2_all$dat[df$Genetic_Diversity=="A"], data_G2_all$dat[df$Genetic_Diversity=="B"]) 
-# 
-# library("PairedData") 
-# 
-# leveneTest(data_G2_all$resid[data_G2_all$Genetic_Diversity=="High"&
-#                                     data_G2_all$Generation_Eggs==2],
-#                 data_G2_all$resid[data_G2_all$Genetic_Diversity=="Low"&
-#                                     data_G2_all$Generation_Eggs==2])
-# 
-# 
-# ?levene.var.test()
-# 
-# 
-# ?median()
-# ?leveneTest()
-# 
-
-########### 
-########### OPTION C: Check heteroscedasticity of residuals 
-########### 
-#Breusch-Pagan test 
-
-#library(lmtest)
-#lmtest::bptest(Initial_model)
-#p-value is not significant (i.e., >0.05), we do not reject the null hypothesis. Therefore, we assume that the residuals are homoscedastic
-
-#library(skedastic)
-#install.packages("skedastic")
-#skedastic::white_lm(Initial_model)
-
-
-
-
-
-########### 
-########### OPTION D: Test with Levene's test on data
-########### 
-
-# Test variances with Levene's test 
-tapply(data_G2_all$resid, list(data_G2_all$Generation_Eggs, data_G2_all$Genetic_Diversity),var)
-
-# Levene’s test on the varianc
-# Using leveneTest()
-car::leveneTest(resid ~ interaction(Generation_Eggs, Genetic_Diversity), data = data_G2_all)
-
-```           
-            
-### Raw data
-```{r }
-
-var_raw_data <- ggplot2::ggplot(data[data$Extinction_finalstatus=="no",], 
-                aes(x = factor(Generation_Eggs),  
-                                 y = Nb_adults, 
-                                 colour = Genetic_Diversity)) + 
-  geom_boxplot(outlier.color = NA) +
-  geom_point(position = position_dodge(0.75), size = 0.7, alpha = 0.5) +
-  scale_color_manual(name="Demographic history",
-                     breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
-                    values = c("#00AFBB","#FC4E07", "#E7B800")) +
-  ylab("Population size") +
-  xlab("Generation") +
-  geom_text(x=4, y=450, label="**", size = 5, color = "Black") +
-  theme_LO
-var_raw_data
-# 
-# 
-# cowplot::save_plot(file = here::here("figures","Variance_rawdata.pdf"),
-#                    var_raw_data, base_height = 10/cm(1),           
-#                    base_width = 15/cm(1), dpi = 610)
-
-
-
-
-
-
-########### 
-########### OPTION D: Test with Levene's test on data
-########### 
-
-# Test variances with Levene's test 
-tapply(data[data$Extinction_finalstatus=="no",]$Nb_adults, 
-       list(data[data$Extinction_finalstatus=="no",]$Generation_Eggs,
-            data[data$Extinction_finalstatus=="no",]$Genetic_Diversity),var, na.rm=TRUE)
-
-# Levene’s test on the varianc
-# Using leveneTest()
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no",])
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==5,])
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==4,])
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==6,])
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==3,])
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&data$Generation_Eggs==2,])
-
-
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&
-                              data$Generation_Eggs==4&data$Genetic_Diversity!="Medium",])
-
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&
-                              data$Generation_Eggs==4&data$Genetic_Diversity!="Low",])
-
-car::leveneTest(Nb_adults ~ interaction(Generation_Eggs, Genetic_Diversity), 
-                data = data[data$Extinction_finalstatus=="no"&
-                              data$Generation_Eggs==4&data$Genetic_Diversity!="High",])
-
-tapply(data[data$Extinction_finalstatus=="no"&
-              data$Generation_Eggs==4,]$Nb_adults, 
-       data[data$Extinction_finalstatus=="no"&
-              data$Generation_Eggs==4,]$Genetic_Diversity, 
-       var, 
-       na.rm=TRUE)
-
-```           
-            
-### Coefficient of variation 
+## Variance over time: Coefficient of variation 
 ```{r }
 ########### 
 ########### OPTION E: COEFFICIENT OF VARIATION 
