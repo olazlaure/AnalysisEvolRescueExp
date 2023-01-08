@@ -1443,12 +1443,31 @@ summary(mod_1)
 
 #### Plot
 ```{r }
-
 data_dyn <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
                     s(Generation_Eggs, k=5) + 
                     s(Population, bs="re"),  family = nb(), data=data_dyn)
+
+#Check transformation: OK  
+# mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
+#                     s(Generation_Eggs, k=5),  family = nb(), data=data_dyn)
+# 
+# mod_A_p <- tidymv::get_gam_predictions(model = mod_final,
+#                                        series = Generation_Eggs,
+#                                        transform = exp)
+# tapply(mod_A_p$Nb_adults,mod_A_p$Genetic_Diversity,min)
+# 
+# 
+# data_predict_gam <- data.frame(Generation_Eggs = rep(seq(2,6, 0.01),3),
+#                                Genetic_Diversity = rep(levels(data_dyn$Genetic_Diversity),
+#                                                        each=length(seq(2,6,0.01))))
+# data_predict_gam$fit<- mgcv::predict.gam(mod_final, newdata = data_predict_gam,
+#             type = "response")
+# tapply(data_predict_gam$fit,data_predict_gam$Genetic_Diversity,min)
+# 
+# 
+# data_predict_gam
 
 
 # Plot  block effect
@@ -1462,21 +1481,8 @@ ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
 
 
 
-# # Plot Diversity effect
-# mod_A_p <- tidymv::predict_gam(mod_final, 
-#                                exclude_terms = list("s(Population)", "Block"), 
-#                                values = list(Population = NULL, Block = NULL),
-#                                type = "link")
-# 
-# # mod_A_p$fit <- exp(mod_A_p$fit)
-# # mod_A_p$se.fit <- exp(mod_A_p$se.fit)
-# ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
-#    tidymv::geom_smooth_ci(Genetic_Diversity) 
 
-
-
-
-########## Other function EXCLUDING BLOCK EFFECT 
+########## EXCLUDING BLOCK EFFECT 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
                          s(Generation_Eggs, k=5) +
                          s(Population, bs="re"),  family = nb(), data=data_dyn)
@@ -1497,7 +1503,7 @@ tidymv::plot_smooths(mod_final, Generation_Eggs, Genetic_Diversity,
 # data_predict_gam <- data.frame(Generation_Eggs = rep(seq(2,6, 0.01),3),
 #                                Genetic_Diversity = rep(levels(data_dyn$Genetic_Diversity),
 #                                                        each=length(seq(2,6,0.01))),
-#                                Block = "Block4", 
+#                                Block = "Block4",
 #                                Population = rep(c("High1","Med1","Low1"),
 #                                                 each=length(seq(2,6,0.01))))
 # library(mgcv)
@@ -1505,7 +1511,7 @@ tidymv::plot_smooths(mod_final, Generation_Eggs, Genetic_Diversity,
 #             exclude_terms = list("s(Population)", "Block"),
 #             values = list(Population = NULL, Block = NULL),
 #             type = "response")
-# ggplot(data = data_predict_gam, aes(Generation_Eggs, fit)) 
+#ggplot(data = data_predict_gam, aes(Generation_Eggs, fit))
 
 
 
@@ -1552,20 +1558,20 @@ plot_GAM_Ucurve <- ggplot(data = data, aes(Generation_Eggs, Nb_adults)) +
                            group = Genetic_Diversity, 
                            fill = Genetic_Diversity, 
                            color =Genetic_Diversity), 
-                       alpha=0.3, size=0.1) + 
+                       alpha=0.2, size=0.05) + 
   geom_line(data = mod_A_p,
             aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity),
-            size = 1, linetype = 1) + 
+            size = 0.8, linetype = 1) + 
   ylab("Population size") +
   xlab("Generation") +
   scale_fill_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"),
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
-                     values = c("#00AFBB","#FC4E07","#E7B800")) +
+                     values = c("#00AFBB","#FD7C49","#F5C400")) +
   scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"),
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
-                     values = c("#00AFBB","#FC4E07","#E7B800")) +
+                     values = c("#00AFBB","#FD7C49","#F5C400")) +
  xlim(1.8,6.2) +
  theme_LO  + 
  theme(panel.grid.major.y = element_blank(),
@@ -1579,19 +1585,13 @@ plot_GAM_Ucurve <- ggplot(data = data, aes(Generation_Eggs, Nb_adults)) +
 #                    plot_GAM_Ucurve, base_height = 10/cm(1),
 #                    base_width = 13/cm(1), dpi = 610)
 # 
-# 
+
 
 
 #To estimate confidence interval at the end of the experiment
 #Default on tidymv::geom_smooth_ci is ci_z = 1.96
 #population size at the end
 data_gam_end <- as.data.frame(mod_A_p[mod_A_p$Generation_Eggs==6,])
-
-
-#Confirmation on the plot: 
-# plot_GAM_Ucurve + 
-#   ylim (50,170) + 
-#   xlim (5.9,6.1)
 
 
 #minimum population size 
@@ -1602,6 +1602,93 @@ mod_A_p[mod_A_p$Genetic_Diversity=="Medium"&mod_A_p$Nb_adults<=65.2,]
 mod_A_p[mod_A_p$Genetic_Diversity=="Low"&mod_A_p$Nb_adults<=60.4,]
 
 
+
+
+
+
+#### Plot with the interaction effect 
+mod_final_interaction <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
+                    s(Generation_Eggs, k=5) + s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"),  family = nb(), data=data_dyn)
+
+
+# Plot interaction
+mod_A_interaction <- tidymv::get_gam_predictions(model = mod_final_interaction,
+                                       series = Generation_Eggs,
+                                       exclude_random = TRUE,
+                                       transform = exp)
+
+
+plot_GAM_Ucurve_interaction <- ggplot(data = data, aes(Generation_Eggs, Nb_adults)) +
+  geom_point(data = data[data$Extinction_finalstatus=="no",], 
+             aes(x = Generation_Eggs,
+                                y = Nb_adults,
+                               group = Genetic_Diversity,
+                                colour = Genetic_Diversity),
+             position = position_dodge2(0.3), 
+             size = 0.6, alpha = 0.9) +
+  ggplot2::geom_ribbon(data = mod_A_interaction, 
+                       aes(ymin = CI_lower, 
+                           ymax = CI_upper, 
+                           x = Generation_Eggs, 
+                           group = Genetic_Diversity, 
+                           fill = Genetic_Diversity, 
+                           color =Genetic_Diversity), 
+                       alpha=0.2, size=0.05) + 
+  geom_line(data = mod_A_interaction,
+            aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity),
+            size = 0.8, linetype = 1) + 
+  ylab("Population size") +
+  xlab("Generation") +
+  scale_fill_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"),
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
+                     values = c("#00AFBB","#FD7C49","#F5C400")) +
+  scale_color_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"),
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
+                     values = c("#00AFBB","#FD7C49","#F5C400")) +
+ xlim(1.8,6.2) +
+ theme_LO  + 
+ theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
+ plot_GAM_Ucurve_interaction
+
+ 
+#minimum population size 
+mod_A_interaction[mod_A_interaction$Generation_Eggs==6,]
+
+tapply(mod_A_interaction$Nb_adults,mod_A_interaction$Genetic_Diversity,min)
+
+mod_A_interaction[mod_A_interaction$Genetic_Diversity=="High"&mod_A_interaction$Nb_adults<=99.82,]
+mod_A_interaction[mod_A_interaction$Genetic_Diversity=="Medium"&mod_A_interaction$Nb_adults<=62.03,]
+mod_A_interaction[mod_A_interaction$Genetic_Diversity=="Low"&mod_A_interaction$Nb_adults<=58.37,]
+
+ 
+ 
+
+legend_gamm <- lemon::g_legend(plot_GAM_Ucurve_interaction)
+
+PLOT_ALL_GAMM <- cowplot::ggdraw() + 
+  cowplot::draw_plot(plot_GAM_Ucurve + theme(legend.position = "none"), 
+            x = 0.01, y = 0, width = 0.4, height = 0.95) + 
+  cowplot::draw_plot(plot_GAM_Ucurve_interaction + theme(legend.position = "none"), 
+            x = 0.4, y = 0, width = 0.4, height = 0.95) + 
+  cowplot::draw_plot(legend_gamm, x = 0.84, y = 0.5, width = 0.1, height = 0.1) + 
+  cowplot::draw_plot_label(c("A", "B"),  
+                  x = c(0.01,0.4), 
+                  y = c(1, 1), 
+                  hjust = c(-0.25, -0.25), 
+                  vjust = c(1.5, 1.5),
+                  size = 16) 
+ PLOT_ALL_GAMM
+
+
+# cowplot::save_plot(file = here::here("figures","PopulationSize_GAM_Best_Intearction.pdf"),
+#                    PLOT_ALL_GAMM, base_height = 10/cm(1),
+#                    base_width = 22/cm(1), dpi = 610)
+
+ 
 ```
 
 
