@@ -1462,23 +1462,24 @@ ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
 
 
 
-# Plot Diversity effect
-mod_A_p <- tidymv::predict_gam(mod_final, 
-                               exclude_terms = list("s(Population)", "Block"), 
-                               values = list(Population = NULL, Block = NULL),
-                               type = "link")
+# # Plot Diversity effect
+# mod_A_p <- tidymv::predict_gam(mod_final, 
+#                                exclude_terms = list("s(Population)", "Block"), 
+#                                values = list(Population = NULL, Block = NULL),
+#                                type = "link")
+# 
+# # mod_A_p$fit <- exp(mod_A_p$fit)
+# # mod_A_p$se.fit <- exp(mod_A_p$se.fit)
+# ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
+#    tidymv::geom_smooth_ci(Genetic_Diversity) 
 
-# mod_A_p$fit <- exp(mod_A_p$fit)
-# mod_A_p$se.fit <- exp(mod_A_p$se.fit)
-ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
-   tidymv::geom_smooth_ci(Genetic_Diversity) 
+
 
 
 ########## Other function EXCLUDING BLOCK EFFECT 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
                          s(Generation_Eggs, k=5) +
                          s(Population, bs="re"),  family = nb(), data=data_dyn)
-
 
 
 mod_A_p <- tidymv::get_gam_predictions(model = mod_final,
@@ -1508,8 +1509,35 @@ tidymv::plot_smooths(mod_final, Generation_Eggs, Genetic_Diversity,
 
 
 
-## PLOT
-plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
+# ## PLOT
+# plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
+#   geom_point(data = data[data$Extinction_finalstatus=="no",], 
+#              aes(x = Generation_Eggs,
+#                                 y = Nb_adults,
+#                                group = Genetic_Diversity,
+#                                 colour = Genetic_Diversity),
+#              position = position_dodge2(0.3), 
+#              size = 0.6, alpha = 0.9) +
+#   tidymv::plot_smooths(mod_final, Generation_Eggs, Genetic_Diversity,
+#                      exclude_random = TRUE,
+#                      transform = exp) +
+#   tidymv::geom_smooth_ci(Genetic_Diversity,
+#                  size = 1.5, linetype = 1)  +
+#   ylab("Population size") +
+#   xlab("Generation") +
+#   scale_color_manual(name="Demographic history",
+#                      breaks = c("High", "Medium", "Low"),
+#                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
+#                      values = c("#00AFBB","#FC4E07","#E7B800")) +
+#  xlim(1.8,6.2) +
+#  theme_LO  + 
+#  theme(panel.grid.major.y = element_blank(),
+#         panel.grid.minor.y = element_blank())
+#  plot_GAM_Ucurve
+
+
+ ## PLOT
+plot_GAM_Ucurve <- ggplot(data = data, aes(Generation_Eggs, Nb_adults)) +
   geom_point(data = data[data$Extinction_finalstatus=="no",], 
              aes(x = Generation_Eggs,
                                 y = Nb_adults,
@@ -1517,13 +1545,23 @@ plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
                                 colour = Genetic_Diversity),
              position = position_dodge2(0.3), 
              size = 0.6, alpha = 0.9) +
-  # tidymv::plot_smooths(mod_final, Generation_Eggs, Genetic_Diversity,
-  #                    exclude_random = TRUE,
-  #                    transform = exp) +
-  tidymv::geom_smooth_ci(Genetic_Diversity,
-                 size = 1.5, linetype = 1)  +
+  ggplot2::geom_ribbon(data = mod_A_p, 
+                       aes(ymin = CI_lower, 
+                           ymax = CI_upper, 
+                           x = Generation_Eggs, 
+                           group = Genetic_Diversity, 
+                           fill = Genetic_Diversity, 
+                           color =Genetic_Diversity), 
+                       alpha=0.3, size=0.1) + 
+  geom_line(data = mod_A_p,
+            aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity),
+            size = 1, linetype = 1) + 
   ylab("Population size") +
   xlab("Generation") +
+  scale_fill_manual(name="Demographic history",
+                     breaks = c("High", "Medium", "Low"),
+                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
+                     values = c("#00AFBB","#FC4E07","#E7B800")) +
   scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"),
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
@@ -1535,21 +1573,19 @@ plot_GAM_Ucurve <- ggplot(data = mod_A_p, aes(Generation_Eggs, fit)) +
  plot_GAM_Ucurve
 
 
- 
- # cowplot::save_plot(file = here::here("figures","PopulationSize_GAM.pdf"),
+     
+# 
+# cowplot::save_plot(file = here::here("figures","PopulationSize_GAM.pdf"),
 #                    plot_GAM_Ucurve, base_height = 10/cm(1),
 #                    base_width = 13/cm(1), dpi = 610)
 # 
 # 
-#   
+
 
 #To estimate confidence interval at the end of the experiment
 #Default on tidymv::geom_smooth_ci is ci_z = 1.96
 #population size at the end
 data_gam_end <- as.data.frame(mod_A_p[mod_A_p$Generation_Eggs==6,])
-data_gam_end$CIlower <- data_gam_end$fit-(1.96*data_gam_end$se.fit)
-data_gam_end$CIupper <- data_gam_end$fit+(1.96*data_gam_end$se.fit)
-data_gam_end
 
 
 #Confirmation on the plot: 
@@ -1558,16 +1594,12 @@ data_gam_end
 #   xlim (5.9,6.1)
 
 
-
-## Prediction for main text 
-#population size at the end
-as.data.frame(mod_A_p[mod_A_p$Generation_Eggs==6,])
-
-
 #minimum population size 
-tempdata <- as.data.frame(mod_A_p)
-tapply(mod_A_p$fit,mod_A_p$Genetic_Diversity,min)
-tempdata[tempdata$Genetic_Diversity=="High"&tempdata$fit<=114,]
+tapply(mod_A_p$Nb_adults,mod_A_p$Genetic_Diversity,min)
+
+mod_A_p[mod_A_p$Genetic_Diversity=="High"&mod_A_p$Nb_adults<=96.1,]
+mod_A_p[mod_A_p$Genetic_Diversity=="Medium"&mod_A_p$Nb_adults<=65.2,]
+mod_A_p[mod_A_p$Genetic_Diversity=="Low"&mod_A_p$Nb_adults<=60.4,]
 
 
 ```
@@ -1575,9 +1607,7 @@ tempdata[tempdata$Genetic_Diversity=="High"&tempdata$fit<=114,]
 
 ## Variance over time: Coefficient of variation 
 ```{r }
-########### 
-########### OPTION E: COEFFICIENT OF VARIATION 
-########### 
+
 SUM_CoefVar <- Rmisc::summarySE(data[data$Extinction_finalstatus=="no"&data$Generation_Eggs>=2,], 
                         measurevar = c("Nb_adults"),
                        groupvars = c("Genetic_Diversity","Generation_Eggs"), 
@@ -2091,7 +2121,7 @@ PLOT_He_expect <- ggplot2::ggplot(SUM_POP_He_Mean) +
   geom_line(data = data_predict_lambda,
             aes(x = He_end, y = lambda_predict),
             col = "grey40", size = 1.5, linetype = 1) + 
-      geom_errorbar(data = SUM_POP_He_Mean, aes(x = He_end, 
+  geom_errorbar(data = SUM_POP_He_Mean, aes(x = He_end, 
                                 ymin = Lambda-se, ymax = Lambda+se,
                                 colour = Genetic_Diversity), 
              size = 0.6, width=0, alpha = 0.6) + 
@@ -2410,9 +2440,9 @@ anova(mod0, mod1, test = "Chisq")
 # Test effect
 mod_1 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), method="ML", data=data_dyn)
+                    s(Population, bs="re"), method="ML", family = nb(), data=data_dyn)
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
 
 itsadug::compareML(mod_1, mod_2)
 
@@ -2435,65 +2465,18 @@ anova(mod3,mod4,test="Chisq") # difference
 
 
 
-##### P_adults 
-mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-##### P_adults 
-mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-##### P_larvae 
-mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-
-
+########Life stage
+mod1 <- ordinal::clmm(stage ~ Block + Divsersity + Week +
+                        (1|ID_Rep) + (1|Population), 
+                      data=data_multinom, weights=count)
+mod2 <- ordinal::clmm(stage ~ Block + Divsersity  + 
+                        (1|ID_Rep) + (1|Population), 
+                      data=data_multinom, weights=count)
+mod3 <- ordinal::clmm(stage ~ Block + Week  +
+                        (1|ID_Rep) + (1|Population), 
+                      data=data_multinom, weights=count)
+anova(mod1,mod2) #sign
+anova(mod1,mod3) # non sign
 ``` 
 
 
@@ -2558,72 +2541,6 @@ mod3 <- lme4::lmer(Lambda ~ log(He_end) + Block + (1|Population),
 mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
                    data=data_phenotyping[!is.na(data_phenotyping$He_end),])
 anova(mod3,mod4,test="Chisq") # difference
-
-
-
-
-
-##### P_adults 
-mod0 <- lme4::glmer(p_adults ~ He_end + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-mod0 <- lme4::glmer(p_adults ~ He_end + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-##### P_adults 
-mod0 <- lme4::glmer(p_pupae ~ He_end + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-mod0 <- lme4::glmer(p_pupae ~ He_end + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-##### P_larvae 
-mod0 <- lme4::glmer(p_larvae ~ He_end + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-mod0 <- lme4::glmer(p_larvae ~ He_end + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-
-
-
-
-
 ``` 
 
 
