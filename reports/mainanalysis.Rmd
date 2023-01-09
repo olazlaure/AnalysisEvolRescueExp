@@ -592,7 +592,6 @@ PLOT_prop
 #           base_height = 10/cm(1), base_width = 18/cm(1), dpi = 610)
 
 
-lm()
 
 
 ``` 
@@ -802,62 +801,62 @@ tapply(data$He_remain[data$Generation_Eggs==1], data$Genetic_Diversity[data$Gene
 
 ``` 
 
-## Survival vs He 
+## Old Survival vs He 
 ```{r }
 
-s2 <- survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
-summary(s2)
-
-# Create a summary dataset 
-SUM_survprob <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity), each =6), 
-                       Generation_Eggs = rep(seq(1:6), n=3),
-                       SurvProb = 1, 
-                       se = 0)
-
-
-SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
-                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$surv[1]
-SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
-                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$surv[2]
-SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
-                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$surv[3]
-
-SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
-                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$surv[4]
-SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
-                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$surv[5]
-SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
-                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$surv[6]
-  
-SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
-                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$std.err[1]
-SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
-                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$std.err[2]
-SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
-                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$std.err[3]
-
-SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
-                        SUM_survprob$Generation_Eggs==4]<-summary(s2)$std.err[4]
-SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
-                        SUM_survprob$Generation_Eggs==5]<-summary(s2)$std.err[5]
-SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
-                        SUM_survprob$Generation_Eggs==6]<-summary(s2)$std.err[6]
-  
-
-data_survprob_he <- merge(x = data, y = SUM_survprob, by = c("Genetic_Diversity", "Generation_Eggs"), all.x=TRUE)
-head(data_survprob_he)
-
-
-Plot_survival <- ggplot2::ggplot(data_survprob_he, aes(x = He_remain,  y = SurvProb ,  colour = Genetic_Diversity)) + 
-    geom_point(alpha = 0.8) +
-    ylab("Survival probability") +
-    xlab("Expected heterozygosity") +
-    scale_color_manual(name="Demographic history",
-                     breaks = c("High", "Medium", "Low"), 
-                    labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
-                    values = c("#00AFBB","#FC4E07", "#E7B800")) + 
-    labs(size="Replicates") + 
-    theme_LO 
+# s2 <- survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+# summary(s2)
+# 
+# # Create a summary dataset 
+# SUM_survprob <- data.frame(Genetic_Diversity = rep(levels(data$Genetic_Diversity), each =6), 
+#                        Generation_Eggs = rep(seq(1:6), n=3),
+#                        SurvProb = 1, 
+#                        se = 0)
+# 
+# 
+# SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
+#                         SUM_survprob$Generation_Eggs==4]<-summary(s2)$surv[1]
+# SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
+#                         SUM_survprob$Generation_Eggs==5]<-summary(s2)$surv[2]
+# SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Medium"&
+#                         SUM_survprob$Generation_Eggs==6]<-summary(s2)$surv[3]
+# 
+# SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
+#                         SUM_survprob$Generation_Eggs==4]<-summary(s2)$surv[4]
+# SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
+#                         SUM_survprob$Generation_Eggs==5]<-summary(s2)$surv[5]
+# SUM_survprob$SurvProb[SUM_survprob$Genetic_Diversity=="Low"&
+#                         SUM_survprob$Generation_Eggs==6]<-summary(s2)$surv[6]
+#   
+# SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
+#                         SUM_survprob$Generation_Eggs==4]<-summary(s2)$std.err[1]
+# SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
+#                         SUM_survprob$Generation_Eggs==5]<-summary(s2)$std.err[2]
+# SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Medium"&
+#                         SUM_survprob$Generation_Eggs==6]<-summary(s2)$std.err[3]
+# 
+# SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
+#                         SUM_survprob$Generation_Eggs==4]<-summary(s2)$std.err[4]
+# SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
+#                         SUM_survprob$Generation_Eggs==5]<-summary(s2)$std.err[5]
+# SUM_survprob$se[SUM_survprob$Genetic_Diversity=="Low"&
+#                         SUM_survprob$Generation_Eggs==6]<-summary(s2)$std.err[6]
+#   
+# 
+# data_survprob_he <- merge(x = data, y = SUM_survprob, by = c("Genetic_Diversity", "Generation_Eggs"), all.x=TRUE)
+# head(data_survprob_he)
+# 
+# 
+# Plot_survival <- ggplot2::ggplot(data_survprob_he, aes(x = He_remain,  y = SurvProb ,  colour = Genetic_Diversity)) + 
+#     geom_point(alpha = 0.8) +
+#     ylab("Survival probability") +
+#     xlab("Expected heterozygosity") +
+#     scale_color_manual(name="Demographic history",
+#                      breaks = c("High", "Medium", "Low"), 
+#                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
+#                     values = c("#00AFBB","#FC4E07", "#E7B800")) + 
+#     labs(size="Replicates") + 
+#     theme_LO 
 
 # 
 # 
@@ -1352,7 +1351,7 @@ data_dyn$obs<-as.factor(1:nrow(data_dyn))
 mod0 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
                     s(Population, bs="re"), 
-                    method="ML",  family = nb(), link = log, data=data_dyn)
+                    method="ML",  family = mgcv::nb(), link = log, data=data_dyn)
 
 #Check overdispersion 
 sqrt(deviance(mod0)/(nobs(mod0)-length(coef(mod0))))
@@ -1372,9 +1371,9 @@ summary(mod0)
 ### Test interaction Generation*Genetic Diversity
 mod_1 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), method="ML",  family = nb(),  data=data_dyn)
+                    s(Population, bs="re"), method="ML",  family = mgcv::nb(),  data=data_dyn)
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, family = nb(),  method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = mgcv::nb(),  method='ML')
 
 itsadug::compareML(mod_1, mod_2)
 AIC(mod_1, mod_2)
@@ -1383,9 +1382,9 @@ AIC(mod_1, mod_2)
 ### Test effect Generation
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
                     s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = mgcv::nb(), method='ML')
 mod_3 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
-                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = mgcv::nb(), method='ML')
 itsadug::compareML(mod_3, mod_2)
 
 # 
@@ -1394,10 +1393,10 @@ itsadug::compareML(mod_3, mod_2)
 ### Test intercept Genetic Diversity
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  
                     s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, family = nb(),   method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = mgcv::nb(),   method='ML')
 mod_3 <- mgcv::gam(Nb_adults ~ Block  +   
                     s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = mgcv::nb(), method='ML')
 itsadug::compareML(mod_3, mod_2)
 
 
@@ -1406,7 +1405,7 @@ itsadug::compareML(mod_3, mod_2)
 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +
                          s(Generation_Eggs, k=5) +
-                         s(Population, bs="re"), data=data_dyn,  family = nb(), method='ML')
+                         s(Population, bs="re"), data=data_dyn,  family = mgcv::nb(), method='ML')
 
 
 ###### 2- Summary of the model
@@ -1423,7 +1422,7 @@ contrasts(data_dyn$OFGroup_diversity)
 mod_1 <- mgcv::gam(Nb_adults ~ OFGroup_diversity + Block +  
                     s(Generation_Eggs, k=5) + 
                      s(Generation_Eggs, by = OFGroup_diversity, k=5) + 
-                    s(Population, bs="re"), method="ML", family = nb(), data=data_dyn)
+                    s(Population, bs="re"), method="ML", family = mgcv::nb(), data=data_dyn)
 
 
 summary(mod_1)
@@ -1445,13 +1444,14 @@ summary(mod_1)
 ```{r }
 data_dyn <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 
+library(mgcv)
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
                     s(Generation_Eggs, k=5) + 
-                    s(Population, bs="re"),  family = nb(), data=data_dyn)
+                    s(Population, bs="re"),  family = mgcv::nb(), data=data_dyn)
 
 #Check transformation: OK  
 # mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
-#                     s(Generation_Eggs, k=5),  family = nb(), data=data_dyn)
+#                     s(Generation_Eggs, k=5),  family = mgcv::nb(), data=data_dyn)
 # 
 # mod_A_p <- tidymv::get_gam_predictions(model = mod_final,
 #                                        series = Generation_Eggs,
@@ -1485,7 +1485,7 @@ ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
 ########## EXCLUDING BLOCK EFFECT 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
                          s(Generation_Eggs, k=5) +
-                         s(Population, bs="re"),  family = nb(), data=data_dyn)
+                         s(Population, bs="re"),  family = mgcv::nb(), data=data_dyn)
 
 
 mod_A_p <- tidymv::get_gam_predictions(model = mod_final,
@@ -1609,7 +1609,7 @@ mod_A_p[mod_A_p$Genetic_Diversity=="Low"&mod_A_p$Nb_adults<=60.4,]
 #### Plot with the interaction effect 
 mod_final_interaction <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
                     s(Generation_Eggs, k=5) + s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"),  family = nb(), data=data_dyn)
+                    s(Population, bs="re"),  family = mgcv::nb(), data=data_dyn)
 
 
 # Plot interaction
@@ -1675,20 +1675,28 @@ PLOT_ALL_GAMM <- cowplot::ggdraw() +
   cowplot::draw_plot(plot_GAM_Ucurve_interaction + theme(legend.position = "none"), 
             x = 0.4, y = 0, width = 0.4, height = 0.95) + 
   cowplot::draw_plot(legend_gamm, x = 0.84, y = 0.5, width = 0.1, height = 0.1) + 
-  cowplot::draw_plot_label(c("A", "B"),  
+  cowplot::draw_plot_label(c("A", 
+                             "B"),   
                   x = c(0.01,0.4), 
                   y = c(1, 1), 
                   hjust = c(-0.25, -0.25), 
                   vjust = c(1.5, 1.5),
-                  size = 16) 
+                  size = 17) + 
+  cowplot::draw_plot_label(c("Best-fit model without interaction ", 
+                             "Full model with interaction "),  
+                  x = c(0.23, 0.63), 
+                  y = c(1, 1), 
+                  hjust = c(0.5, 0.5), 
+                  vjust = c(1.5, 1.5),
+                  size = 12) 
  PLOT_ALL_GAMM
 
-
+# 
 # cowplot::save_plot(file = here::here("figures","PopulationSize_GAM_Best_Intearction.pdf"),
 #                    PLOT_ALL_GAMM, base_height = 10/cm(1),
 #                    base_width = 22/cm(1), dpi = 610)
-
- 
+# 
+#  
 ```
 
 
@@ -2527,9 +2535,9 @@ anova(mod0, mod1, test = "Chisq")
 # Test effect
 mod_1 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block +   s(Generation_Eggs, k=5) +
                     s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), method="ML", family = nb(), data=data_dyn)
+                    s(Population, bs="re"), method="ML", family = mgcv::nb(), data=data_dyn)
 mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, k=5) +
-                    s(Population, bs="re"), data=data_dyn, family = nb(), method='ML')
+                    s(Population, bs="re"), data=data_dyn, family = mgcv::nb(), method='ML')
 
 itsadug::compareML(mod_1, mod_2)
 
