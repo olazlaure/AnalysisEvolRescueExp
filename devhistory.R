@@ -31,7 +31,7 @@ usethis::use_package("nnet")
 usethis::use_package("fitdistrplus")
 usethis::use_package("survminer")
 usethis::use_package("stats")
-
+usethis::use_package("DescTools")
 
 
 ## Update NAMESPACE file

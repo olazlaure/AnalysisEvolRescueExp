@@ -487,10 +487,10 @@ PLOT_Extinction<-ggplot2::ggplot(data,  aes(x = factor(Generation_Eggs),
 PLOT_Extinction
 # 
 # 
-# cowplot::save_plot(here::here("figures","Extinction.pdf"),   PLOT_Extinction, base_height = 8/cm(1),
+# cowplot::save_plot(here::here("figures","Fig2_Extinction.pdf"),   PLOT_Extinction, base_height = 8/cm(1),
 #           base_width = 20/cm(1), dpi = 610)
-# #
-# 
+#
+
 # 
 
 
@@ -588,10 +588,10 @@ PLOT_prop <- ggplot2::ggplot(data = SUM_Prop, aes(x = Genetic_Diversity,
 PLOT_prop
 
 # 
-# cowplot::save_plot(here::here("figures","Life_stage_proportion.pdf"),   PLOT_prop,
+# cowplot::save_plot(here::here("figures","FigS2_Life_stage_proportion.pdf"),   PLOT_prop,
 #           base_height = 10/cm(1), base_width = 18/cm(1), dpi = 610)
-
-
+# 
+# 
 
 
 ``` 
@@ -791,8 +791,8 @@ PLOT_He_extinction <-ggplot2::ggplot(data, aes(x = factor(Generation_Eggs),
   xlab("Generation") +
   theme_LO
 PLOT_He_extinction
-# # 
-# cowplot::save_plot(here::here("figures","Heterozygosity_over_time.pdf"),
+# #
+# cowplot::save_plot(here::here("figures","FigS1_He_over_time.pdf"),
 #                    PLOT_He_extinction,
 #           base_height = 12/cm(1), base_width = 14/cm(1), dpi = 610)
 # 
@@ -1691,12 +1691,12 @@ PLOT_ALL_GAMM <- cowplot::ggdraw() +
                   size = 12) 
  PLOT_ALL_GAMM
 
-# 
-# cowplot::save_plot(file = here::here("figures","PopulationSize_GAM_Best_Intearction.pdf"),
+
+# cowplot::save_plot(file = here::here("figures","Fig3_Dynamics_GAMM.pdf"),
 #                    PLOT_ALL_GAMM, base_height = 10/cm(1),
 #                    base_width = 22/cm(1), dpi = 610)
-# 
-#  
+
+
 ```
 
 
@@ -1834,9 +1834,9 @@ plot_CV_function <- ggplot2::ggplot(SUM_CoefVar_DescTools,
 plot_CV_function
 
 
-# cowplot::save_plot(here::here("figures","CoefficientVariation_time.pdf"),   plot_CV_function,
+# cowplot::save_plot(here::here("figures","Fig4_CoefficientVariation.pdf"),   plot_CV_function,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
-# 
+
 # 
 
 
@@ -2230,15 +2230,15 @@ PLOT_He_expect <- ggplot2::ggplot(SUM_POP_He_Mean) +
                      breaks = c("High", "Medium", "Low"), 
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"), 
                     values = c("#00AFBB","#FC4E07","#E7B800")) +
-  theme_LO
+  theme_LO + 
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank())
 PLOT_He_expect
 
 
-# 
-# 
-# cowplot::save_plot(here::here("figures","Fitness_He_final.pdf"),   PLOT_He_expect,
+
+# cowplot::save_plot(here::here("figures","Fig5_GrowthRate_He.pdf"),   PLOT_He_expect,
 #           base_height = 12/cm(1), base_width = 18/cm(1), dpi = 610)
-# 
 
 
 ```
