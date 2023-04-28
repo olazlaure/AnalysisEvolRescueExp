@@ -32,10 +32,16 @@ usethis::use_package("fitdistrplus")
 usethis::use_package("survminer")
 usethis::use_package("stats")
 usethis::use_package("DescTools")
-
+usethis::use_package("AER")
+usethis::use_package("mgcv")
+usethis::use_package("survival")
+usethis::use_package("gtsummary")
+usethis::use_package("ggsurvfit")
+usethis::use_package("dplyr")
 
 ## Update NAMESPACE file
 devtools::document()
 
 ## Load all required packages
 devtools::load_all()
+
