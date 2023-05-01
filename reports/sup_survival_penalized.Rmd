@@ -1,0 +1,338 @@
+---
+title: "Evolutionary rescue experiment: effect of genetic diversity"
+author: "Laure Olazcuaga"
+date: "`r format(Sys.Date(), '%d-%B-%Y')`"
+output: 
+  html_document:
+    theme: "journal"
+    toc: true
+    toc_depth: 3
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+editor_options: 
+  chunk_output_type: console
+---
+    
+
+# DATA
+## Pop sive over time dataset
+```{r }
+data <- read.table(file=here::here("data", "BE_Census_Data.csv"), sep=",", header=TRUE)
+  
+head(data)
+tail(data)
+dim(data)
+summary(data)
+
+#Remove populations killed due to the pathogen
+data_status  <- data.frame(data$Population,data$Extinction_finalstatus)
+data_kill<-data[data$Extinction_finalstatus=="kill",]
+dim(data_kill)
+data<-data[data$Extinction_finalstatus!="kill",]
+
+#Add pop growth rate
+data$Nb_adults <- data$HC_Total_Adults
+data$Lambda <- data$Nb_adults / data$Nb_parents
+data$obs<-as.factor(1:nrow(data))
+#summary(data)
+#Remove 
+
+#Check variables
+str(data)
+data$Genetic_Diversity <- as.factor(data$Genetic_Diversity)
+data$Block <- as.factor(data$Block)
+data$Population <- as.factor(data$Population)
+data$Extinction_finalstatus <- as.factor(data$Extinction_finalstatus)
+
+#Order levels 
+data$Genetic_Diversity <- plyr::revalue(data$Genetic_Diversity, c("Med"="Medium"))
+data$Genetic_Diversity <- factor(data$Genetic_Diversity, levels = c("High", "Medium", "Low"))
+levels(data$Genetic_Diversity)
+
+data<-droplevels(data) #remove previous levels 
+
+
+``` 
+
+
+
+## Survival data
+```{r }
+
+
+data_survival <- data[data$Generation_Parents==0,c("Population","Block","Genetic_Diversity")]
+data_survival$Gen_eggs_extinct <- max(data$Generation_Eggs)
+data_survival$Survival <- "yes"
+
+#Format data
+for (i in unique(data_survival$Population)) {
+  if (data$Extinction_finalstatus[data$Population==i&data$Generation_Eggs==1] == "yes" ) {
+    data_survival$Gen_eggs_extinct[data_survival$Population==i]<-
+      min(data$Generation_Eggs[data$Population==i&data$First_Throw=="extinct"])
+    data_survival$Survival[data_survival$Population==i] <- "extinct"
+  }else{
+    print(i)
+  }
+}
+
+
+str(data_survival)
+data_survival$Survival <- as.factor(data_survival$Survival)
+#Note: the Surv() function in the {survival} package accepts by default TRUE/FALSE, where TRUE is event and FALSE is censored; 1/0 where 1 is event and 0 is censored; or 2/1 where 2 is event and 1 is censored. Please take care to ensure the event indicator is properly formatted.
+data_survival$status <- ifelse(data_survival$Survival=="extinct", 1, 0)
+
+
+
+```
+
+
+
+
+# ANALYSIS: Deal with the no event in diverse issue
+```{r }
+#https://stats.stackexchange.com/questions/124821/dealing-with-no-events-in-one-treatment-group-survival-analysis
+
+##############
+######## 1- Implements Firth's penalized maximum likelihood bias reduction method for Cox regression
+##############
+
+library("coxphf")
+library("survival")
+
+
+# COX representation wth Penalized regression
+s_pen_full <- coxphf::coxphf(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
+            data = data_survival)
+s_pen_full
+summary(s_pen_full)
+
+s_pen <- coxphf::coxphf(formula = survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+            data = data_survival)
+s_pen
+summary(s_pen)
+
+# s2 <- coxphf::coxphf(survival::Surv(Gen_eggs_extinct, status) ~ Block, 
+#             data = data_survival)
+# anova(s1, s2)
+
+
+
+# PENALIZED LRT 
+coxphftest( formula=survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+            test=~Genetic_Diversity,  data=data_survival)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Plot 
+plot_penalized <- coxphf::coxphfplot(sdemographic,
+                               pval = TRUE,             # show p-value of log-rank test.
+                               #pval.coord  = c(1,0.2), 
+                               pval.size = 5, 
+                               conf.int = TRUE,         # show confidence intervals for point estimaes of survival curves.
+                               # conf.int.style = "step",  # customize style of confidence intervals
+                               conf.int.style = "ribbon",  # customize style of confidence intervals 
+                               conf.int.alpha = 0.3,  # customize style of confidence intervals
+                               censor = TRUE, 
+                               censor.shape = "x", 
+                               censor.size = 6, 
+                               xlab = "Generation",   # customize X axis label.
+                               break.time.by = 1,     # break X axis in time intervals by 1
+                               ggtheme = theme_light(), # customize plot and risk table with a theme.
+                               #risk.table = TRUE, # Add risk table
+                               #linetype = "strata", # Change line type by groups
+                               risk.table = "abs_pct",  # absolute number and percentage at risk.
+                               risk.table.y.text.col = T,# colour risk table text annotations.
+                               risk.table.y.text = FALSE,# show bars instead of names in text annotations in legend of risk table.
+                               risk.table.col = "strata", # Change risk table color by groups
+                               legend.labs = c("Diverse","Intermediate bottleneck","Strong bottleneck"),   
+                               legend = c("right"),
+                               legend.title = c("Demographic\nhistory:"),   
+                               palette = c("#00AFBB", "#E7B800", "#FC4E07")) 
+
+
+
+plot_penalized
+
+
+
+
+##############
+######## 2- Augmented Data: As in Scucz et al. 2017 - Ecology
+##############
+# str(data_survival)
+# data_survival_augmented <- rbind(data_survival, 
+#                                  c("HighX", "Block3", "High", "6", "extinct", "1"))
+# str(data_survival)
+# str(data_survival_augmented)
+# data_survival_augmented$status <- as.numeric(data_survival_augmented$status)
+# data_survival_augmented$Gen_eggs_extinct <- as.numeric(data_survival_augmented$Gen_eggs_extinct)
+# 
+# 
+# #With real data
+# s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
+#                       data = data_survival)
+# s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Block, 
+#                       data = data_survival)
+# anova(s1, s2)
+# 
+# 
+# #With augmented data
+# s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
+#             data = data_survival_augmented)
+# s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~  Block, 
+#             data = data_survival_augmented)
+# anova(s1, s2)
+# 
+# survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#                 data = data_survival_augmented) %>% 
+#   gtsummary::tbl_regression(exp = TRUE) 
+# 
+# s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity-1, 
+#                       data = data_survival_augmented)
+# sum_s1<-summary(s1)
+# sum_s1
+# confint(s1)
+# 
+# exp(sum_s1$coefficients)
+# 
+# survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#                   data = data_survival_augmented)
+# summary(survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#                 data = data_survival_augmented))
+# 
+# 
+
+
+##############
+######## 3- Consider only bottlenecked (LRT possible)
+##############
+data_survival_bottlenecked <- data_survival[data_survival$Genetic_Diversity!="High",]
+data_survival_bottlenecked<-droplevels(data_survival_bottlenecked)
+
+#With real data - But only bottlenecked 
+s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
+                      data = data_survival_bottlenecked)
+s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Block, 
+                      data = data_survival_bottlenecked)
+anova(s1, s2)
+
+survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+                data = data_survival_bottlenecked) %>% 
+  gtsummary::tbl_regression(exp = TRUE) 
+
+
+
+
+
+##############
+######## Good- Comparison without estimates
+##############
+#Log Rank Test in R, the most frequent technique to compare survival curves between two groups is to use a log-rank test.
+
+# Test hypotheses:
+# Ho: In terms of survivability, there is no difference between the two groups.
+# Hi: There is a survival differential between the two groups.
+# We can reject the null hypothesis and infer that there is enough evidence to claim there is a difference in survival between the two groups if the p-value of the test is less than 0.05 (95% confidence level).
+
+
+#Comparison 
+survival::survdiff(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+                   data = data_survival)
+
+#The Chi-Squared test statistic is 7 with 2 degree of freedom and the corresponding p-value is 0.03. 
+#Since this p-value is less than 0.05, we reject the null hypothesis.
+#In other words, we have sufficient evidence to say that there is a statistically significant difference in survival between the three groups.
+
+# survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+# summary(survfit(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival))
+# 
+# 
+
+
+``` 
+
+
+
+
+#### Other representation
+```{r }
+
+### OTHER REPRESENTATION :  
+s2 <- survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+                        data = data_survival)
+summary(s2)
+print(s2)
+# Access to the sort summary table
+summary(s2)$table
+
+d <- data.frame(time = s2$time,
+                n.risk = s2$n.risk,
+                n.event = s2$n.event,
+                n.censor = s2$n.censor,
+                surv = s2$surv,
+                upper = s2$upper,
+                lower = s2$lower)
+head(d)
+
+
+plot2 <- survminer::ggsurvplot(s2,
+                               pval = TRUE,             # show p-value of log-rank test.
+                               #pval.coord  = c(1,0.2), 
+                               pval.size = 5, 
+                               conf.int = TRUE,         # show confidence intervals for point estimaes of survival curves.
+                               # conf.int.style = "step",  # customize style of confidence intervals
+                               conf.int.style = "ribbon",  # customize style of confidence intervals 
+                               conf.int.alpha = 0.3,  # customize style of confidence intervals
+                               censor = TRUE, 
+                               censor.shape = "x", 
+                               censor.size = 6, 
+                               xlab = "Generation",   # customize X axis label.
+                               break.time.by = 1,     # break X axis in time intervals by 1
+                               ggtheme = theme_light(), # customize plot and risk table with a theme.
+                               #risk.table = TRUE, # Add risk table
+                               #linetype = "strata", # Change line type by groups
+                               risk.table = "abs_pct",  # absolute number and percentage at risk.
+                               risk.table.y.text.col = T,# colour risk table text annotations.
+                               risk.table.y.text = FALSE,# show bars instead of names in text annotations in legend of risk table.
+                               risk.table.col = "strata", # Change risk table color by groups
+                               legend.labs = c("Diverse","Intermediate bottleneck","Strong bottleneck"),   
+                               legend = c("right"),
+                               legend.title = c("Demographic\nhistory:"),   
+                               palette = c("#00AFBB", "#E7B800", "#FC4E07")) 
+
+
+
+plot2
+# 
+# cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis_V2.pdf"),
+#                    plot2, base_height = 10/cm(1),  base_width = 15/cm(1), dpi = 610)
+
+
+
+# Fit a Cox proportional hazards model
+# fit.coxph <- coxph(Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival)
+# ggforest(fit.coxph, data = data_survival)
+
+
+
+
+
+
+```
+
+

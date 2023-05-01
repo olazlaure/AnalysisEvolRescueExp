@@ -842,11 +842,6 @@ summary(survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ 1, data = d
 #### Comparison across groups
 ```{r }
 
-# library(lubridate)
-# library("tidycmprsk")
-# library("condSURV")
-
-#########
 
 
 ######################################################
@@ -888,8 +883,8 @@ plot_survival
 
 #rm(plot_survival)
 
-cowplot::save_plot(file = here::here("figures","Extinction_Survival_analysis.pdf"),
-                   plot_survival, base_height = 12/cm(1),  base_width = 18/cm(1), dpi = 610)
+# cowplot::save_plot(file = here::here("figures","FigS1_Extinction_Survival_analysis.pdf"),
+#                    plot_survival, base_height = 12/cm(1),  base_width = 18/cm(1), dpi = 610)
 
 
 # COX representation 
@@ -898,9 +893,6 @@ s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversi
 s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Block, 
             data = data_survival)
 anova(s1, s2)
-
-
-
 
 
 survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, data = data_survival) %>% 
@@ -922,52 +914,78 @@ survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, da
 ```{r }
 #https://stats.stackexchange.com/questions/124821/dealing-with-no-events-in-one-treatment-group-survival-analysis
 
+##############
+######## 1- Implements Firth's penalized maximum likelihood bias reduction method for Cox regression
+##############
+# https://bookdown.org/rwnahhas/RMPH/survival-separation.html
+# library("coxphf")
+# # COX representation wth Penalized regression
+# s_pen_full <- coxphf::coxphf(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
+#             data = data_survival)
+# s_pen_full
+# summary(s_pen_full)
+# 
+# s_pen <- coxphf::coxphf(formula = survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#             data = data_survival)
+# s_pen
+# summary(s_pen)
+
+# s2 <- coxphf::coxphf(survival::Surv(Gen_eggs_extinct, status) ~ Block, 
+#             data = data_survival)
+# anova(s1, s2)
+
+
+# # PENALIZED LRT 
+# coxphftest( formula=survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block,
+#             test=~Genetic_Diversity,  data=data_survival)
+# 
+
 
 ##############
 ######## 2- Augmented Data: As in Scucz et al. 2017 - Ecology
 ##############
-str(data_survival)
-data_survival_augmented <- rbind(data_survival, 
-                                 c("HighX", "Block3", "High", "6", "extinct", "1"))
-str(data_survival)
-str(data_survival_augmented)
-data_survival_augmented$status <- as.numeric(data_survival_augmented$status)
-data_survival_augmented$Gen_eggs_extinct <- as.numeric(data_survival_augmented$Gen_eggs_extinct)
-
-
-#With real data
-s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
-                      data = data_survival)
-s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Block, 
-                      data = data_survival)
-anova(s1, s2)
-
-
-#With augmented data
-s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
-            data = data_survival_augmented)
-s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~  Block, 
-            data = data_survival_augmented)
-anova(s1, s2)
-
-survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
-                data = data_survival_augmented) %>% 
-  gtsummary::tbl_regression(exp = TRUE) 
-
-s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity-1, 
-                      data = data_survival_augmented)
-sum_s1<-summary(s1)
-sum_s1
-confint(s1)
-
-exp(sum_s1$coefficients)
-
-survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
-                  data = data_survival_augmented)
-summary(survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
-                data = data_survival_augmented))
-
-
+# str(data_survival)
+# data_survival_augmented <- rbind(data_survival, 
+#                                  c("HighX", "Block3", "High", "6", "extinct", "1"))
+# str(data_survival)
+# str(data_survival_augmented)
+# data_survival_augmented$status <- as.numeric(data_survival_augmented$status)
+# data_survival_augmented$Gen_eggs_extinct <- as.numeric(data_survival_augmented$Gen_eggs_extinct)
+# 
+# 
+# #With real data
+# s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
+#                       data = data_survival)
+# s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Block, 
+#                       data = data_survival)
+# anova(s1, s2)
+# 
+# 
+# #With augmented data
+# s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity + Block, 
+#             data = data_survival_augmented)
+# s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~  Block, 
+#             data = data_survival_augmented)
+# anova(s1, s2)
+# 
+# survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#                 data = data_survival_augmented) %>% 
+#   gtsummary::tbl_regression(exp = TRUE) 
+# 
+# s1 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity-1, 
+#                       data = data_survival_augmented)
+# sum_s1<-summary(s1)
+# sum_s1
+# confint(s1)
+# 
+# exp(sum_s1$coefficients)
+# 
+# survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#                   data = data_survival_augmented)
+# summary(survival::survfit(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#                 data = data_survival_augmented))
+# 
+# 
 
 
 ##############
@@ -1291,10 +1309,11 @@ extractAIC(mod0)
 
 
 mod0<-logistf::logistf(y ~ Genetic_Diversity + Block, 
-                      data=data_proba_extinction)
+                      data=data_proba_extinction )
 mod1<-logistf::logistf(y ~ Block, 
                       data=data_proba_extinction)
 anova(mod1,mod0)
+# logLik(mod1)
 #lmtest::lrtest(mod1,mod0)
 
 
@@ -1347,7 +1366,7 @@ mod0 <- glm(Generation_Eggs ~  Block,
 anova(mod0, mod1, test = "Chisq")
 #We keep genetic diversity 
 
-
+logLik(mod1)
 
 #Check for  overdispersion 
 sqrt(deviance(mod1)/(nobs(mod1)-length(coef(mod1))))
@@ -1368,6 +1387,10 @@ AER::dispersiontest(mod1)
 # Perform the lrtest 
 (A <- logLik(mod1))
 (B <- logLik(mod0))
+
+#attr(logLik(mod1), "df")-attr(logLik(mod0), "df") 
+
+
 #Since the logLik() function gives more information than the numeric value, use the as.numeric() function to isolate the numeric value
 (teststat <- -2 * (as.numeric(A)-as.numeric(B)))
 #df = 5 - 3 = 2
@@ -1727,7 +1750,7 @@ data_dyn <- data[data$Generation_Eggs>=2&data$Extinction_finalstatus=="no",]
 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block + 
                     s(Generation_Eggs, k=5) + 
-                    s(Population, bs="re"),  family = mgcv::nb(), data=data_dyn)
+                    s(Population, bs="re"),  family = mgcv::nb(), data=data_dyn,  method='REML')
 
 #Check transformation: OK  
 # mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
@@ -1765,7 +1788,8 @@ ggplot(data = mod_block_P, aes(Generation_Eggs, fit)) +
 ########## EXCLUDING BLOCK EFFECT 
 mod_final <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
                          s(Generation_Eggs, k=5) +
-                         s(Population, bs="re"),  family = mgcv::nb(), data=data_dyn)
+                         s(Population, bs="re"),  family = mgcv::nb(), 
+                       data=data_dyn, method='REML')
 
 
 mod_A_p <- tidymv::get_gam_predictions(model = mod_final,
@@ -1889,7 +1913,8 @@ mod_A_p[mod_A_p$Genetic_Diversity=="Low"&mod_A_p$Nb_adults<=60.4,]
 #### Plot with the interaction effect 
 mod_final_interaction <- mgcv::gam(Nb_adults ~ Genetic_Diversity  + 
                     s(Generation_Eggs, k=5) + s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"),  family = mgcv::nb(), data=data_dyn)
+                    s(Population, bs="re"),  family = mgcv::nb(), 
+                    data=data_dyn,  method='REML')
 
 
 # Plot interaction
@@ -1971,11 +1996,11 @@ PLOT_ALL_GAMM <- cowplot::ggdraw() +
                   size = 12) 
  PLOT_ALL_GAMM
 
-
+# 
 # cowplot::save_plot(file = here::here("figures","Fig3_Dynamics_GAMM.pdf"),
 #                    PLOT_ALL_GAMM, base_height = 10/cm(1),
 #                    base_width = 22/cm(1), dpi = 610)
-
+# 
 
 ```
 
@@ -2274,18 +2299,16 @@ AIC(mlog, msqrt, mnorm)
 ##################        Analysis        ###################
 #############################################################
 
-mod0 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
+mod5 <- lme4::lmer(Lambda ~ Genetic_Diversity + Block + (1|Population), 
                    data=data_phenotyping)
-
-summary(mod0)
-
+# summary(mod0)
 mod1 <- lme4::lmer(Lambda ~ Block + (1|Population), 
                    data=data_phenotyping)
-anova(mod0,mod1,test="Chisq") # difference
+anova(mod5,mod1,test="Chisq") # difference
 
--2*(logLik(mod0)-logLik(mod1)) 
-attr(logLik(mod1), "df")-attr(logLik(mod0), "df") 
-lmtest::lrtest(mod1,mod0)
+# -2*(logLik(mod0)-logLik(mod1)) 
+# attr(logLik(mod1), "df")-attr(logLik(mod0), "df") 
+# lmtest::lrtest(mod1,mod0)
 
 
 
@@ -2416,13 +2439,13 @@ plot(log(x),y)
 #############################################################
 
 mod3 <- lme4::lmer(Lambda ~ He_end + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
-mod4 <- lme4::lmer(Lambda ~ 1 + Block + (1|Population), 
-                   data=data_phenotyping[!is.na(data_phenotyping$He_end),])
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),], REML=FALSE)
+mod4 <- lme4::lmer(Lambda ~ Block + (1|Population), 
+                   data=data_phenotyping[!is.na(data_phenotyping$He_end),], REML=FALSE)
 anova(mod3,mod4,test="Chisq") # difference
 
-logLik(mod1)
-lmtest::lrtest(mod4,mod3)
+# logLik(mod1)
+# lmtest::lrtest(mod4,mod3)
 
 
 

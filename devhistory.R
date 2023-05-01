@@ -37,6 +37,7 @@ usethis::use_package("mgcv")
 usethis::use_package("survival")
 usethis::use_package("gtsummary")
 usethis::use_package("ggsurvfit")
+usethis::use_package("coxphf")
 usethis::use_package("dplyr")
 
 ## Update NAMESPACE file
