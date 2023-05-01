@@ -882,7 +882,8 @@ plot_survival <- ggsurvfit::survfit2(survival::Surv(Gen_eggs_extinct, status) ~ 
   scale_color_manual(name="Demographic history",
                      breaks = c("High", "Medium", "Low"),
                     labels = c("Diverse","Intermediate bottleneck","Strong bottleneck"),
-                     values = c("#00AFBB","#FD7C49","#F5C400")) 
+                     values = c("#00AFBB","#FD7C49","#F5C400")) +
+  ylab("Survival probability")
 plot_survival
 
 #rm(plot_survival)
