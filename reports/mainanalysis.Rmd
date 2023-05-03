@@ -1342,6 +1342,29 @@ plogis(confint(fit))
  
 #plogis(sum_p_extinct)
 
+#########
+######### Difference in the model between med and low
+
+#Extraction of the difference 
+mod_1 <- logistf::logistf(y ~ Genetic_Diversity-1 + Block, 
+                      data=data_proba_extinction)
+summary(mod_1)
+obs_diff <- plogis(coef(mod_1)[3]) - plogis(coef(mod_1)[2])
+#plogis(-2.3929983)-plogis(-2.5593086)
+names(obs_diff) <- "Observed difference"
+obs_diff      
+
+# Parametric bootstrap interval for the difference
+reps <- 5000
+diff_boot <- sapply(1:reps, simul_modlogist)
+mean(diff_boot)
+
+
+hist(diff_boot)
+abline(v = obs_diff, col = "red")
+quantile(diff_boot, c(0.025, 0.975))  #95% interval
+obs_diff
+
 ``` 
 
 
@@ -1410,6 +1433,39 @@ exp(sum_mod1$coefficients)
 exp(1.568)
 exp(1.6094)
 
+
+exp(0.1295)
+
+
+
+
+
+#########
+######### Difference in the model between med and low
+
+#Extraction of the difference 
+mod_1 <- glm(Generation_Eggs ~ Genetic_Diversity-1,
+                    data = data_timeextinction, family = "poisson")
+summary(mod_1)
+obs_diff <- exp(coef(mod_1)[2]) - exp(coef(mod_1)[1])
+names(obs_diff) <- "Observed difference"
+obs_diff      
+
+
+# Parametric bootstrap interval for the difference
+reps <- 5000
+diff_boot <- rep(NA, reps)
+for ( i in 1:reps ) {
+    dat_i <- simulate(mod_1)
+    dat_i <- data.frame(Genetic_Diversity = data_timeextinction$Genetic_Diversity, 
+                        y = dat_i$sim_1)
+    mod1_i <- glm(y ~ Genetic_Diversity - 1, data = dat_i, family = "poisson")
+    diff_boot[i] <- exp(coef(mod1_i)[2]) - exp(coef(mod1_i)[1])
+}
+hist(diff_boot)
+abline(v = obs_diff, col = "red")
+quantile(diff_boot, c(0.025, 0.975))  #95% interval
+obs_diff
 ``` 
 
 
@@ -1739,6 +1795,15 @@ summary(mod_1)
 # seful only with significative interaction 
 # Which is not the case here
 # But see: https://jacolienvanrij.com/Tutorials/GAMM.html
+
+
+
+### HERE XXXXX
+# Difference between low and med 
+mod_dif <- mgcv::gam(Nb_adults ~ Genetic_Diversity-1 + Block +   s(Generation_Eggs, k=5) +
+                    s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
+                    s(Population, bs="re"), method="ML",  family = mgcv::nb(),  data=data_dyn)
+summary(mod_dif)
 
 
 ```
@@ -2345,6 +2410,44 @@ SUM_GrowthRate <- Rmisc::summarySE(data_phenotyping,
                         measurevar = c("Lambda"),
                        groupvars = c("Genetic_Diversity","Week"), 
                        na.rm = TRUE)
+
+
+############ 
+###### DIFFERNCE
+############
+
+
+
+#########
+######### Difference in the model between med and low
+
+#Extraction of the difference 
+mod_1 <- lme4::lmer(Lambda ~ Genetic_Diversity-1 + Block + (1|Population), 
+                   data=data_phenotyping)
+sum_mod_1 <- summary(mod_1)
+obs_diff <- sum_mod_1$coefficients[2,1] - sum_mod_1$coefficients[3,1]
+names(obs_diff) <- "Observed difference"
+obs_diff      
+
+
+# Parametric bootstrap interval for the difference
+reps <- 5000
+diff_boot <- rep(NA, reps)
+for ( i in 1:reps ) {
+    dat_i <- simulate(mod_1)
+    dat_i <- data.frame(Genetic_Diversity = data_phenotyping$Genetic_Diversity,
+                        Block = data_phenotyping$Block, 
+                        Population = data_phenotyping$Population, 
+                        Lambda_expected = dat_i$sim_1)
+    mod1_i <- lme4::lmer(Lambda_expected ~ Genetic_Diversity-1 + Block + (1|Population), 
+                   data=dat_i)
+    sum_mod_1 <- summary(mod1_i)
+    diff_boot[i] <- sum_mod_1$coefficients[2,1] - sum_mod_1$coefficients[3,1]
+}
+hist(diff_boot)
+abline(v = obs_diff, col = "red")
+quantile(diff_boot, c(0.025, 0.975))  #95% interval
+obs_diff
 
 
 

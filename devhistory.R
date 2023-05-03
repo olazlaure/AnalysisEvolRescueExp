@@ -19,6 +19,8 @@ dir.create("figures")
 
 ## Create a R directory and a file for functions
 usethis::use_r("theme_LO")
+usethis::use_r("simulate_logist")
+usethis::use_r("simulate_GAMM")
 
 ## Update DESCRIPTION file
 usethis::use_package("ggplot2")
