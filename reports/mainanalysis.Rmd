@@ -1798,14 +1798,6 @@ summary(mod_1)
 
 
 
-### HERE XXXXX
-# Difference between low and med 
-mod_dif <- mgcv::gam(Nb_adults ~ Genetic_Diversity-1 + Block +   s(Generation_Eggs, k=5) +
-                    s(Generation_Eggs, by = Genetic_Diversity, k=5) + 
-                    s(Population, bs="re"), method="ML",  family = mgcv::nb(),  data=data_dyn)
-summary(mod_dif)
-
-
 ```
 
 
