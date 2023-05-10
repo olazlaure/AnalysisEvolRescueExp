@@ -1423,7 +1423,7 @@ lmtest::lrtest(mod0,mod1)
 
 
 
-mod1 <- glm(Generation_Eggs ~ Genetic_Diversity-1 + Block,
+mod1 <- glm(Generation_Eggs ~ Genetic_Diversity-1,
                     data = data_timeextinction, family = "poisson")
 sum_mod1 <- summary(mod1)
 datatransformed <- confint(mod1)
