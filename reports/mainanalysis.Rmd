@@ -1387,6 +1387,7 @@ mod0 <- glm(Generation_Eggs ~  Block,
                     data = data_timeextinction, family = "poisson")
 
 anova(mod0, mod1, test = "Chisq")
+#MuMIn::model.sel(mod0, mod1)
 #We keep genetic diversity 
 
 logLik(mod1)
@@ -1411,7 +1412,7 @@ AER::dispersiontest(mod1)
 (A <- logLik(mod1))
 (B <- logLik(mod0))
 
-#attr(logLik(mod1), "df")-attr(logLik(mod0), "df") 
+attr(logLik(mod1), "df")-attr(logLik(mod0), "df") 
 
 
 #Since the logLik() function gives more information than the numeric value, use the as.numeric() function to isolate the numeric value
@@ -1435,9 +1436,6 @@ exp(1.6094)
 
 
 exp(0.1295)
-
-
-
 
 
 #########
@@ -1466,6 +1464,8 @@ hist(diff_boot)
 abline(v = obs_diff, col = "red")
 quantile(diff_boot, c(0.025, 0.975))  #95% interval
 obs_diff
+
+
 ``` 
 
 
@@ -1699,7 +1699,7 @@ mod_2 <- mgcv::gam(Nb_adults ~ Genetic_Diversity + Block  +  s(Generation_Eggs, 
                     s(Population, bs="re"), data=data_dyn, family = mgcv::nb(),  method='ML')
 
 itsadug::compareML( mod_2,mod_1,suggest.report = TRUE)
-anova(mod_1, mod_2, test = "LRT")
+#anova(mod_1, mod_2, test = "LRT")
 
 
 #CompareML is preferred over other functions such as AIC for models that include an AR1 model or random effects (especially nonlinear random smooths using bs='fs'). CompareML also reports the AIC difference, but that value should be treated with care.
@@ -2449,52 +2449,52 @@ obs_diff
 ## Remaining He difference
 ```{r }
 
-Rmisc::summarySE(data[data$Generation_Eggs==2,],
-          measurevar = c("He_remain"),
-          groupvars = c("Genetic_Diversity"),
-          na.rm=TRUE)
-
-
-mfull <- lm(He_remain ~ Genetic_Diversity, data=data[data$Generation_Eggs==2,])
-mless <- lm(He_remain ~ 1, data=data[data$Generation_Eggs==2,])
-anova(mfull,mless) #Keep effect
-
-
-
-############ 
-###### Posthoc
-############ 
-emmeans::emmeans(mfull, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-
-
-Rmisc::summarySE(data[data$Generation_Eggs==2,],
-          measurevar = c("He_remain"),
-          groupvars = c("Genetic_Diversity"),
-          na.rm=TRUE)
-
-
-
-
-#Calcul for end:
-Rmisc::summarySE(data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",],
-          measurevar = c("He_end"),
-          groupvars = c("Genetic_Diversity"),
-          na.rm=TRUE)
-
-mfull <- lm(He_end ~ Genetic_Diversity, data=data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",])
-mless <- lm(He_end ~ 1, data=data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",])
-anova(mfull,mless) #Keep effect
-
-
-
-
-############ 
-###### Posthoc
-############ 
-emmeans::emmeans(mfull, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-
+# Rmisc::summarySE(data[data$Generation_Eggs==2,],
+#           measurevar = c("He_remain"),
+#           groupvars = c("Genetic_Diversity"),
+#           na.rm=TRUE)
+# 
+# 
+# mfull <- lm(He_remain ~ Genetic_Diversity, data=data[data$Generation_Eggs==2,])
+# mless <- lm(He_remain ~ 1, data=data[data$Generation_Eggs==2,])
+# anova(mfull,mless) #Keep effect
+# 
+# 
+# 
+# ############ 
+# ###### Posthoc
+# ############ 
+# emmeans::emmeans(mfull, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+# 
+# 
+# 
+# Rmisc::summarySE(data[data$Generation_Eggs==2,],
+#           measurevar = c("He_remain"),
+#           groupvars = c("Genetic_Diversity"),
+#           na.rm=TRUE)
+# 
+# 
+# 
+# 
+# #Calcul for end:
+# Rmisc::summarySE(data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",],
+#           measurevar = c("He_end"),
+#           groupvars = c("Genetic_Diversity"),
+#           na.rm=TRUE)
+# 
+# mfull <- lm(He_end ~ Genetic_Diversity, data=data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",])
+# mless <- lm(He_end ~ 1, data=data[data$Generation_Eggs==2&data$Extinction_finalstatus!="yes",])
+# anova(mfull,mless) #Keep effect
+# 
+# 
+# 
+# 
+# ############ 
+# ###### Posthoc
+# ############ 
+# emmeans::emmeans(mfull, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
+# 
+# 
 
 
 
@@ -2701,90 +2701,72 @@ anova(m0,m1,test="Chisq")
 
 
 
-## Adults G2 
+
+
+## TEMP: Proportion life stage
 ```{r }
-m0 <- glm(Nb_adults ~ Genetic_Diversity + Block,  family = "poisson", data = data[data$Generation_Eggs==2,])
-summary(m0)
-
-m1<- glm(Nb_adults ~ Block,  family = "poisson", data = data[data$Generation_Eggs==2,])
-anova(m0,m1,test="Chisq") # difference
-
-############ 
-###### Posthoc
-############ 
-emmeans::emmeans(m0, list(pairwise ~ Genetic_Diversity), adjust = "tukey") 
-
-
-``` 
-
-
-
-
-
-## Proportion life stage
-```{r }
-##### P_adults 
-mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-rm(mod0,mod1)
-
-
-mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-rm(mod0,mod1)
-
-
-##### P_adults 
-mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-rm(mod0,mod1)
-
-mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference
-
-rm(mod0,mod1)
-
-##### P_larvae 
-mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping_4week,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference and convergence issue
-
-
-mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"),
-                   weights = Nb_ttx)
-mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
-                   data = data_phenotyping,family = binomial(link = "logit"), 
-                    weights = Nb_ttx)
-anova(mod0,mod1,test="Chisq") # NO difference and convergence issue
-
-
-
+# ##### P_adults 
+# mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
+#                    data = data_phenotyping_4week,family = binomial(link = "logit"),
+#                    weights = Nb_ttx)
+# mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+#                    data = data_phenotyping_4week,family = binomial(link = "logit"), 
+#                     weights = Nb_ttx)
+# anova(mod0,mod1,test="Chisq") # NO difference
+# rm(mod0,mod1)
+# 
+# 
+# mod0 <- lme4::glmer(p_adults ~ Genetic_Diversity + Block + (1|Population), 
+#                    data = data_phenotyping,family = binomial(link = "logit"),
+#                    weights = Nb_ttx)
+# mod1 <- lme4::glmer(p_adults ~ 1 + Block + (1|Population), 
+#                    data = data_phenotyping,family = binomial(link = "logit"), 
+#                     weights = Nb_ttx)
+# anova(mod0,mod1,test="Chisq") # NO difference
+# rm(mod0,mod1)
+# 
+# 
+# ##### P_adults 
+# mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
+#                    data = data_phenotyping_4week,family = binomial(link = "logit"),
+#                    weights = Nb_ttx)
+# mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+#                    data = data_phenotyping_4week,family = binomial(link = "logit"), 
+#                     weights = Nb_ttx)
+# anova(mod0,mod1,test="Chisq") # NO difference
+# 
+# rm(mod0,mod1)
+# 
+# mod0 <- lme4::glmer(p_pupae ~ Genetic_Diversity + Block + (1|Population), 
+#                    data = data_phenotyping,family = binomial(link = "logit"),
+#                    weights = Nb_ttx)
+# mod1 <- lme4::glmer(p_pupae ~ 1 + Block + (1|Population), 
+#                    data = data_phenotyping,family = binomial(link = "logit"), 
+#                     weights = Nb_ttx)
+# anova(mod0,mod1,test="Chisq") # NO difference
+# 
+# rm(mod0,mod1)
+# 
+# ##### P_larvae 
+# mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
+#                    data = data_phenotyping_4week,family = binomial(link = "logit"),
+#                    weights = Nb_ttx)
+# mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+#                    data = data_phenotyping_4week,family = binomial(link = "logit"), 
+#                     weights = Nb_ttx)
+# anova(mod0,mod1,test="Chisq") # NO difference and convergence issue
+# 
+# 
+# mod0 <- lme4::glmer(p_larvae ~ Genetic_Diversity + Block + (1|Population), 
+#                    data = data_phenotyping,family = binomial(link = "logit"),
+#                    weights = Nb_ttx)
+# mod1 <- lme4::glmer(p_larvae ~ 1 + Block + (1|Population), 
+#                    data = data_phenotyping,family = binomial(link = "logit"), 
+#                     weights = Nb_ttx)
+# anova(mod0,mod1,test="Chisq") # NO difference and convergence issue
+# 
+# 
+# 
 
 
 
@@ -2916,16 +2898,22 @@ anova(mod1,mod3) # non sign
 -2*(logLik(mod2)-logLik(mod1)) 
 lmtest::lrtest(mod2,mod1)
 lmtest::lrtest(mod3,mod1)
+-2*(logLik(mod2))
+-2*(logLik(mod1))
+-2*(logLik(mod3))
 
 
 
-mod3 <- ordinal::clmm(stage ~ Week + Block +
+mod3 <- ordinal::clmm(stage ~ Week-1 + Block +
                         (1|ID_Rep) + (1|Population), 
                       data=data_multinom, weights=count)
 mod3$coefficients
 confint(mod3)
 sigma(mod3)
 summary(mod3)
+
+
+
 ``` 
 
 
