@@ -16,6 +16,14 @@ editor_options:
 ---
     
 
+```{r setup, include =FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+devtools::load_all()
+
+```
+
+
+    
 # DATA
 ## Pop sive over time dataset
 ```{r }
@@ -134,39 +142,39 @@ coxphftest( formula=survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity
 
 
 
-
-
-
-
-# Plot 
-plot_penalized <- coxphf::coxphfplot(sdemographic,
-                               pval = TRUE,             # show p-value of log-rank test.
-                               #pval.coord  = c(1,0.2), 
-                               pval.size = 5, 
-                               conf.int = TRUE,         # show confidence intervals for point estimaes of survival curves.
-                               # conf.int.style = "step",  # customize style of confidence intervals
-                               conf.int.style = "ribbon",  # customize style of confidence intervals 
-                               conf.int.alpha = 0.3,  # customize style of confidence intervals
-                               censor = TRUE, 
-                               censor.shape = "x", 
-                               censor.size = 6, 
-                               xlab = "Generation",   # customize X axis label.
-                               break.time.by = 1,     # break X axis in time intervals by 1
-                               ggtheme = theme_light(), # customize plot and risk table with a theme.
-                               #risk.table = TRUE, # Add risk table
-                               #linetype = "strata", # Change line type by groups
-                               risk.table = "abs_pct",  # absolute number and percentage at risk.
-                               risk.table.y.text.col = T,# colour risk table text annotations.
-                               risk.table.y.text = FALSE,# show bars instead of names in text annotations in legend of risk table.
-                               risk.table.col = "strata", # Change risk table color by groups
-                               legend.labs = c("Diverse","Intermediate bottleneck","Strong bottleneck"),   
-                               legend = c("right"),
-                               legend.title = c("Demographic\nhistory:"),   
-                               palette = c("#00AFBB", "#E7B800", "#FC4E07")) 
-
-
-
-plot_penalized
+# 
+# 
+# 
+# 
+# # Plot 
+# plot_penalized <- coxphf::coxphfplot(demographic,
+#                                pval = TRUE,             # show p-value of log-rank test.
+#                                #pval.coord  = c(1,0.2), 
+#                                pval.size = 5, 
+#                                conf.int = TRUE,         # show confidence intervals for point estimaes of survival curves.
+#                                # conf.int.style = "step",  # customize style of confidence intervals
+#                                conf.int.style = "ribbon",  # customize style of confidence intervals 
+#                                conf.int.alpha = 0.3,  # customize style of confidence intervals
+#                                censor = TRUE, 
+#                                censor.shape = "x", 
+#                                censor.size = 6, 
+#                                xlab = "Generation",   # customize X axis label.
+#                                break.time.by = 1,     # break X axis in time intervals by 1
+#                                ggtheme = theme_light(), # customize plot and risk table with a theme.
+#                                #risk.table = TRUE, # Add risk table
+#                                #linetype = "strata", # Change line type by groups
+#                                risk.table = "abs_pct",  # absolute number and percentage at risk.
+#                                risk.table.y.text.col = T,# colour risk table text annotations.
+#                                risk.table.y.text = FALSE,# show bars instead of names in text annotations in legend of risk table.
+#                                risk.table.col = "strata", # Change risk table color by groups
+#                                legend.labs = c("Diverse","Intermediate bottleneck","Strong bottleneck"),   
+#                                legend = c("right"),
+#                                legend.title = c("Demographic\nhistory:"),   
+#                                palette = c("#00AFBB", "#E7B800", "#FC4E07")) 
+# 
+# 
+# 
+# plot_penalized
 
 
 
@@ -231,9 +239,9 @@ s2 <- survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Block,
                       data = data_survival_bottlenecked)
 anova(s1, s2)
 
-survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
-                data = data_survival_bottlenecked) %>% 
-  gtsummary::tbl_regression(exp = TRUE) 
+# survival::coxph(survival::Surv(Gen_eggs_extinct, status) ~ Genetic_Diversity, 
+#                 data = data_survival_bottlenecked) %>% 
+#   gtsummary::tbl_regression(exp = TRUE) 
 
 
 
@@ -303,7 +311,7 @@ plot2 <- survminer::ggsurvplot(s2,
                                censor.size = 6, 
                                xlab = "Generation",   # customize X axis label.
                                break.time.by = 1,     # break X axis in time intervals by 1
-                               ggtheme = theme_light(), # customize plot and risk table with a theme.
+                               ggtheme = ggplot2::theme_light(), # customize plot and risk table with a theme.
                                #risk.table = TRUE, # Add risk table
                                #linetype = "strata", # Change line type by groups
                                risk.table = "abs_pct",  # absolute number and percentage at risk.
