@@ -28,10 +28,14 @@ The [:open_file_folder: **reports**](reports/) directory contains the `.Rmd` fil
 
  - [:clipboard: Analysis_main_text](reports/mainanalysis.Rmd) : All the analyses that can be found in the main text.
 
+ - [:clipboard: Analysis_supplementary](reports/sup_survival_penalized.Rmd) : All the supplementary analyses for survival analysis.  
+
  
 ### HTML versions
 
- - [:clipboard: Analysis_main_text](reports/mainanalysis.html) : All the analyses that can be found in the main text.
+ - [:clipboard: Analysis_main_text](reports/mainanalysis.html) : All the analyses that can be found in the main text.  
+
+ - [:clipboard: Analysis_supplementary](reports/sup_survival_penalized.html) : All the supplementary analyses for survival analysis.  
 
 The [:open_file_folder: **figures**](figures/) directory contains the figures generated during the analyses.
 
