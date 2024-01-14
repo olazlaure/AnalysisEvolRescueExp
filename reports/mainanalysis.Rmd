@@ -1982,24 +1982,24 @@ mod_A_interaction <- tidymv::get_gam_predictions(model = mod_final_interaction,
 
 
 plot_GAM_Ucurve_interaction <- ggplot(data = data, aes(Generation_Eggs, Nb_adults)) +
-  geom_point(data = data[data$Extinction_finalstatus=="no",], 
-             aes(x = Generation_Eggs,
-                                y = Nb_adults,
-                               group = Genetic_Diversity,
-                                colour = Genetic_Diversity),
-             position = position_dodge2(0.3), 
-             size = 0.6, alpha = 0.9) +
-  ggplot2::geom_ribbon(data = mod_A_interaction, 
-                       aes(ymin = CI_lower, 
-                           ymax = CI_upper, 
-                           x = Generation_Eggs, 
-                           group = Genetic_Diversity, 
-                           fill = Genetic_Diversity, 
-                           color =Genetic_Diversity), 
-                       alpha=0.2, size=0.05) + 
+  # geom_point(data = data[data$Extinction_finalstatus=="no",], 
+  #            aes(x = Generation_Eggs,
+  #                               y = Nb_adults,
+  #                              group = Genetic_Diversity,
+  #                               colour = Genetic_Diversity),
+  #            position = position_dodge2(0.3), 
+  #            size = 0.6, alpha = 0.9) +
+  ggplot2::geom_ribbon(data = mod_A_interaction,
+                       aes(ymin = CI_lower,
+                           ymax = CI_upper,
+                           x = Generation_Eggs,
+                           group = Genetic_Diversity,
+                           fill = Genetic_Diversity,
+                           color =Genetic_Diversity),
+                       alpha=0.2, size=0.05) +
   geom_line(data = mod_A_interaction,
             aes(x = Generation_Eggs, y = Nb_adults, color = Genetic_Diversity),
-            size = 0.8, linetype = 1) + 
+            size = 1.4, linetype = 1) + 
   ylab("Population size") +
   xlab("Generation") +
   scale_fill_manual(name="Demographic history",
@@ -2016,6 +2016,14 @@ plot_GAM_Ucurve_interaction <- ggplot(data = data, aes(Generation_Eggs, Nb_adult
         panel.grid.minor.y = element_blank())
  plot_GAM_Ucurve_interaction
 
+ # 
+cowplot::save_plot(file = here::here("figures","Popsize_Twitt.pdf"),
+                   plot_GAM_Ucurve_interaction, base_height = 10/cm(1),
+                   base_width = 22/cm(1), dpi = 610)
+
+
+ 
+ 
  
 #minimum population size 
 mod_A_interaction[mod_A_interaction$Generation_Eggs==6,]
